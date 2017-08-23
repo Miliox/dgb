@@ -15,13 +15,12 @@ all: debug
 debug:   DFLAGS += -g -debug
 release: DFLAGS += -O -release -inline -noboundscheck
 profile: DFLAGS += -g -O -profile
-
-test: $(OUT)
+test:    DFLAGS += -g -debug -unittest
 
 run: $(OUT)
 	@./$(OUT)
 
-debug release profile: $(OUT)
+debug release profile test: $(OUT)
 
 $(OUT): $(SOURCES)
 	@$(DCC) $(DFLAGS) -of$@ $(SOURCES) $(LIBS)

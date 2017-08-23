@@ -1,17 +1,19 @@
 import memory;
 
-align(16):
+import std.stdio;
+
+align(2):
 union AF {
-    align(8):
+    align(1):
     struct {
         ubyte f;
         ubyte a;
     }
     ushort v;
 };
-align(16):
+align(2):
 union BC {
-    align(8):
+    align(1):
     struct {
         ubyte c;
         ubyte b;
@@ -19,12 +21,12 @@ union BC {
     ushort v;
 };
 
-align(16):
+align(2):
 union HL {
-    align(8):
+    align(1):
     struct {
-        ubyte h;
         ubyte l;
+        ubyte h;
     }
     ushort v;
 };
@@ -36,6 +38,20 @@ static struct Registers
     HL hl;
     ushort sp;  // special
     ushort pc;  // program counter
+
+    unittest {
+        Registers r;
+        r.af.v = 0xDEAD;
+        r.bc.v = 0xABCD;
+        r.hl.h = 0xFF;
+        r.hl.l = 0x00;
+
+        assert(r.af.a == 0xDE);
+        assert(r.af.f == 0xAD);
+        assert(r.bc.b == 0xAB);
+        assert(r.bc.c == 0xCD);
+        assert(r.hl.v == 0xFF00);
+    }
 }
 
 class Cpu
