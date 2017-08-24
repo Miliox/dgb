@@ -1,24 +1,32 @@
 interface Memory
 {
-    ubyte read(ushort address);
-    void write(ushort address, ubyte data);
-    void write(ushort address, ushort data);
+    ubyte  read8(ushort address);
+    ushort read16(ushort address);
+
+    void write8(ushort address, ubyte data);
+    void write16(ushort address, ushort data);
 }
 
 class NoMemory : Memory
 {
-    ubyte read(ushort)
+    ubyte read8(ushort)
     {
         // Nothing to do
         return 0;
     }
 
-    void write(ushort, ubyte)
+    ushort read16(ushort)
+    {
+        // Nothing to do
+        return 0;
+    }
+
+    void write8(ushort, ubyte)
     {
         // Nothing to do
     }
 
-    void write(ushort, ushort)
+    void write16(ushort, ushort)
     {
         // Nothing to do
     }
