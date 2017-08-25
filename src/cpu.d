@@ -659,19 +659,60 @@ class Cpu
 
     // 16 bits arithmetics
 
+    // add for 16 bits registers
+    private static pure void add16(ref ushort acc, ushort reg, ref ubyte f) {
+        bool halfCarry = ((acc & 0xfff) + (reg & 0xfff)) > 0xfff;  // carry from bit 11
+        bool fullCarry = (uint(acc) + uint(reg)) > 0xffff;         // carry from bit 15
+
+        acc += reg;
+
+        resetFlag(f, FLAG_NEG);
+
+        if (halfCarry)
+        {
+            setFlag(f, FLAG_HALF);
+        }
+
+        if (fullCarry)
+        {
+            setFlag(f, FLAG_CARRY);
+        }
+    }
+
+    unittest
+    {
+        // test no flags set
+        ushort acc = 0;
+        ushort reg = 0;
+        ubyte flags = 0;
+        add16(acc, reg, flags);
+        assert(acc == 0);
+        assert(flags == 0);
+
+        // test keep flag zero
+        flags = FLAG_ZERO;
+        add16(acc, reg, flags);
+        assert(flags == FLAG_ZERO);
+
+        acc = 0xfff; reg = 0x001; flags = 0;
+        add16(acc, reg, flags);
+        assert(flags == FLAG_HALF);
+
+        acc = 0xffff; reg = 0x001; flags = 0;
+        add16(acc, reg, flags);
+        assert(flags == (FLAG_CARRY | FLAG_HALF));
+    }
+
+    // inc for 16 bits registers
     private static pure void inc16(ref ushort r, ref ubyte f) {
         r += 1;
-        // TODO: Handle flag set
+        // No flag effects
     }
 
+    // dec for 16 bits registers
     private static pure void dec16(ref ushort r, ref ubyte f) {
         r -= 1;
-        // TODO: Handle flag set
-    }
-
-    private static pure void add16(ref ushort acc, ushort reg, ref ubyte f) {
-        acc += reg;
-        // TODO: Handle flag set
+        // No flag effects
     }
 
 }
