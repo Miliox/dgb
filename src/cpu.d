@@ -99,6 +99,7 @@ class Cpu
     {
         clear();
         fillIsa();
+        fillCbe();
 
         memory = new NoMemory();
     }
@@ -1787,6 +1788,1585 @@ class Cpu
         isaTable[0xef] = delegate() {
             rst(0x38);
             return ubyte(16);
+        };
+    }
+
+    void fillCbe()
+    {
+        // RLC B
+        cbeTable[0x00] = delegate() {
+            rlc8(r.bc.b, r.af.f);
+            return ubyte(8);
+        };
+
+        // RLC C
+        cbeTable[0x01] = delegate() {
+            rlc8(r.bc.c, r.af.f);
+            return ubyte(8);
+        };
+
+        // RLC D
+        cbeTable[0x02] = delegate() {
+            rlc8(r.de.d, r.af.f);
+            return ubyte(8);
+        };
+
+        // RLC E
+        cbeTable[0x03] = delegate() {
+            rlc8(r.de.e, r.af.f);
+            return ubyte(8);
+        };
+
+        // RLC H
+        cbeTable[0x04] = delegate() {
+            rlc8(r.hl.h, r.af.f);
+            return ubyte(8);
+        };
+
+        // RLC L
+        cbeTable[0x05] = delegate() {
+            rlc8(r.hl.l, r.af.f);
+            return ubyte(8);
+        };
+
+        // RLC (HL)
+        cbeTable[0x06] = delegate() {
+            ubyte v = read8(r.hl.v);
+            rlc8(v, r.af.f);
+            write8(r.hl.v, v);
+            return ubyte(8);
+        };
+
+        // RLC A
+        cbeTable[0x07] = delegate() {
+            rlc8(r.af.a, r.af.f);
+            return ubyte(8);
+        };
+
+        // RRC B
+        cbeTable[0x08] = delegate() {
+            rrc8(r.bc.b, r.af.f);
+            return ubyte(8);
+        };
+
+        // RRC C
+        cbeTable[0x09] = delegate() {
+            rrc8(r.bc.c, r.af.f);
+            return ubyte(8);
+        };
+
+        // RRC D
+        cbeTable[0x0a] = delegate() {
+            rrc8(r.de.d, r.af.f);
+            return ubyte(8);
+        };
+
+        // RRC E
+        cbeTable[0x0b] = delegate() {
+            rrc8(r.de.e, r.af.f);
+            return ubyte(8);
+        };
+
+        // RRC H
+        cbeTable[0x0c] = delegate() {
+            rrc8(r.hl.h, r.af.f);
+            return ubyte(8);
+        };
+
+        // RRC L
+        cbeTable[0x0d] = delegate() {
+            rrc8(r.hl.l, r.af.f);
+            return ubyte(8);
+        };
+
+        // RRC (HL)
+        cbeTable[0x0e] = delegate() {
+            ubyte v = read8(r.hl.v);
+            rrc8(v, r.af.f);
+            write8(r.hl.v, v);
+            return ubyte(8);
+        };
+
+        // RRC A
+        cbeTable[0x0f] = delegate() {
+            rrc8(r.af.a, r.af.f);
+            return ubyte(8);
+        };
+
+        // RL B
+        cbeTable[0x10] = delegate() {
+            rl8(r.bc.b, r.af.f);
+            return ubyte(8);
+        };
+
+        // RL C
+        cbeTable[0x11] = delegate() {
+            rl8(r.bc.c, r.af.f);
+            return ubyte(8);
+        };
+
+        // RL D
+        cbeTable[0x12] = delegate() {
+            rl8(r.de.d, r.af.f);
+            return ubyte(8);
+        };
+
+        // RL E
+        cbeTable[0x13] = delegate() {
+            rl8(r.de.e, r.af.f);
+            return ubyte(8);
+        };
+
+        // RL H
+        cbeTable[0x14] = delegate() {
+            rl8(r.hl.h, r.af.f);
+            return ubyte(8);
+        };
+
+        // RL L
+        cbeTable[0x15] = delegate() {
+            rl8(r.hl.l, r.af.f);
+            return ubyte(8);
+        };
+
+        // RL (HL)
+        cbeTable[0x16] = delegate() {
+            ubyte v = read8(r.hl.v);
+            rl8(v, r.af.f);
+            write8(r.hl.v, v);
+            return ubyte(8);
+        };
+
+        // RL A
+        cbeTable[0x17] = delegate() {
+            rl8(r.af.a, r.af.f);
+            return ubyte(8);
+        };
+
+        // RR B
+        cbeTable[0x18] = delegate() {
+            rr8(r.bc.b, r.af.f);
+            return ubyte(8);
+        };
+
+        // RR C
+        cbeTable[0x19] = delegate() {
+            rr8(r.bc.c, r.af.f);
+            return ubyte(8);
+        };
+
+        // RR D
+        cbeTable[0x1a] = delegate() {
+            rr8(r.de.d, r.af.f);
+            return ubyte(8);
+        };
+
+        // RR E
+        cbeTable[0x1b] = delegate() {
+            rr8(r.de.e, r.af.f);
+            return ubyte(8);
+        };
+
+        // RR H
+        cbeTable[0x1c] = delegate() {
+            rr8(r.hl.h, r.af.f);
+            return ubyte(8);
+        };
+
+        // RR L
+        cbeTable[0x1d] = delegate() {
+            rr8(r.hl.l, r.af.f);
+            return ubyte(8);
+        };
+
+        // RR (HL)
+        cbeTable[0x1e] = delegate() {
+            ubyte v = read8(r.hl.v);
+            rr8(v, r.af.f);
+            write8(r.hl.v, v);
+            return ubyte(8);
+        };
+
+        // RR A
+        cbeTable[0x1f] = delegate() {
+            rr8(r.af.a, r.af.f);
+            return ubyte(8);
+        };
+
+        // SLA B
+        cbeTable[0x20] = delegate() {
+            sla8(r.af.a, r.bc.b, r.af.f);
+            return ubyte(8);
+        };
+
+        // SLA C
+        cbeTable[0x21] = delegate() {
+            sla8(r.af.a, r.bc.c, r.af.f);
+            return ubyte(8);
+        };
+
+        // SLA D
+        cbeTable[0x22] = delegate() {
+            sla8(r.af.a, r.de.d, r.af.f);
+            return ubyte(8);
+        };
+
+        // SLA E
+        cbeTable[0x23] = delegate() {
+            sla8(r.af.a, r.de.e, r.af.f);
+            return ubyte(8);
+        };
+
+        // SLA H
+        cbeTable[0x24] = delegate() {
+            sla8(r.af.a, r.hl.h, r.af.f);
+            return ubyte(8);
+        };
+
+        // SLA L
+        cbeTable[0x25] = delegate() {
+            sla8(r.af.a, r.hl.l, r.af.f);
+            return ubyte(8);
+        };
+
+        // SLA (HL)
+        cbeTable[0x26] = delegate() {
+            ubyte v = read8(r.hl.v);
+            sla8(r.af.a, v, r.af.f);
+            write8(r.hl.v, v);
+            return ubyte(16);
+        };
+
+        // SLA A
+        cbeTable[0x27] = delegate() {
+            sla8(r.af.a, r.af.a, r.af.f);
+            return ubyte(8);
+        };
+
+        // SRA B
+        cbeTable[0x28] = delegate() {
+            sra8(r.af.a, r.bc.b, r.af.f);
+            return ubyte(8);
+        };
+
+        // SRA C
+        cbeTable[0x29] = delegate() {
+            sra8(r.af.a, r.bc.c, r.af.f);
+            return ubyte(8);
+        };
+
+        // SRA D
+        cbeTable[0x2a] = delegate() {
+            sra8(r.af.a, r.de.d, r.af.f);
+            return ubyte(8);
+        };
+
+        // SRA E
+        cbeTable[0x2b] = delegate() {
+            sra8(r.af.a, r.de.e, r.af.f);
+            return ubyte(8);
+        };
+
+        // SRA H
+        cbeTable[0x2c] = delegate() {
+            sra8(r.af.a, r.hl.h, r.af.f);
+            return ubyte(8);
+        };
+
+        // SRA L
+        cbeTable[0x2d] = delegate() {
+            sra8(r.af.a, r.hl.l, r.af.f);
+            return ubyte(8);
+        };
+
+        // SRA (HL)
+        cbeTable[0x2e] = delegate() {
+            ubyte v = read8(r.hl.v);
+            sra8(r.af.a, v, r.af.f);
+            write8(r.hl.v, v);
+            return ubyte(16);
+        };
+
+        // SRA A
+        cbeTable[0x2f] = delegate() {
+            sra8(r.af.a, r.af.a, r.af.f);
+            return ubyte(8);
+        };
+
+        // SWAP B
+        cbeTable[0x30] = delegate() {
+            swap8(r.bc.b, r.af.f);
+            return ubyte(8);
+        };
+
+        // SWAP C
+        cbeTable[0x31] = delegate() {
+            swap8(r.bc.c, r.af.f);
+            return ubyte(8);
+        };
+
+        // SWAP D
+        cbeTable[0x32] = delegate() {
+            swap8(r.de.d, r.af.f);
+            return ubyte(8);
+        };
+
+        // SWAP E
+        cbeTable[0x33] = delegate() {
+            swap8(r.de.e, r.af.f);
+            return ubyte(8);
+        };
+
+        // SWAP H
+        cbeTable[0x34] = delegate() {
+            swap8(r.hl.h, r.af.f);
+            return ubyte(8);
+        };
+
+        // SWAP L
+        cbeTable[0x35] = delegate() {
+            swap8(r.hl.l, r.af.f);
+            return ubyte(8);
+        };
+
+        // SWAP HL
+        cbeTable[0x36] = delegate() {
+            ubyte v = read8(r.hl.v);
+            swap8(r.hl.l, r.af.f);
+            write8(r.hl.v, v);
+            return ubyte(8);
+        };
+
+        // SWAP A
+        cbeTable[0x37] = delegate() {
+            swap8(r.af.a, r.af.f);
+            return ubyte(8);
+        };
+
+        // SRL B
+        cbeTable[0x38] = delegate() {
+            srl8(r.af.a, r.bc.b, r.af.f);
+            return ubyte(8);
+        };
+
+        // SRL C
+        cbeTable[0x39] = delegate() {
+            srl8(r.af.a, r.bc.c, r.af.f);
+            return ubyte(8);
+        };
+
+        // SRL D
+        cbeTable[0x3a] = delegate() {
+            srl8(r.af.a, r.de.d, r.af.f);
+            return ubyte(8);
+        };
+
+        // SRL E
+        cbeTable[0x3b] = delegate() {
+            srl8(r.af.a, r.de.e, r.af.f);
+            return ubyte(8);
+        };
+
+        // SRL H
+        cbeTable[0x3c] = delegate() {
+            srl8(r.af.a, r.hl.h, r.af.f);
+            return ubyte(8);
+        };
+
+        // SRL L
+        cbeTable[0x3d] = delegate() {
+            srl8(r.af.a, r.hl.l, r.af.f);
+            return ubyte(8);
+        };
+
+        // SRL (HL)
+        cbeTable[0x3e] = delegate() {
+            ubyte v = read8(r.hl.v);
+            srl8(r.af.a, v, r.af.f);
+            write8(r.hl.v, v);
+            return ubyte(16);
+        };
+
+        // SRL A
+        cbeTable[0x3f] = delegate() {
+            srl8(r.af.a, r.af.a, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 0,B
+        cbeTable[0x40] = delegate() {
+            testBit8(r.bc.b, 0, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 0,C
+        cbeTable[0x41] = delegate() {
+            testBit8(r.bc.c, 0, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 0,D
+        cbeTable[0x42] = delegate() {
+            testBit8(r.de.d, 0, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 0,E
+        cbeTable[0x43] = delegate() {
+            testBit8(r.de.e, 0, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 0,H
+        cbeTable[0x44] = delegate() {
+            testBit8(r.hl.h, 0, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 0,L
+        cbeTable[0x45] = delegate() {
+            testBit8(r.hl.l, 0, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 0,(HL)
+        cbeTable[0x46] = delegate() {
+            ubyte v = read8(r.hl.v);
+            testBit8(v, 0, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 0,A
+        cbeTable[0x47] = delegate() {
+            testBit8(r.af.a, 0, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 1,B
+        cbeTable[0x48] = delegate() {
+            testBit8(r.bc.b, 1, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 1,C
+        cbeTable[0x49] = delegate() {
+            testBit8(r.bc.c, 1, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 1,D
+        cbeTable[0x4a] = delegate() {
+            testBit8(r.de.d, 1, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 1,E
+        cbeTable[0x4b] = delegate() {
+            testBit8(r.de.e, 1, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 1,H
+        cbeTable[0x4c] = delegate() {
+            testBit8(r.hl.h, 1, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 1,L
+        cbeTable[0x4d] = delegate() {
+            testBit8(r.hl.l, 1, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 1,(HL)
+        cbeTable[0x4e] = delegate() {
+            ubyte v = read8(r.hl.v);
+            testBit8(v, 1, r.af.f);
+            return ubyte(16);
+        };
+
+        // BIT 1,A
+        cbeTable[0x4f] = delegate() {
+            testBit8(r.af.a, 1, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 2,B
+        cbeTable[0x50] = delegate() {
+            testBit8(r.bc.b, 2, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 2,C
+        cbeTable[0x51] = delegate() {
+            testBit8(r.bc.c, 2, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 2,D
+        cbeTable[0x52] = delegate() {
+            testBit8(r.de.d, 2, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 2,E
+        cbeTable[0x53] = delegate() {
+            testBit8(r.de.e, 2, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 2,H
+        cbeTable[0x54] = delegate() {
+            testBit8(r.hl.h, 2, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 2,L
+        cbeTable[0x55] = delegate() {
+            testBit8(r.hl.l, 2, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 2,(HL)
+        cbeTable[0x56] = delegate() {
+            ubyte v = read8(r.hl.v);
+            testBit8(v, 2, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 2,A
+        cbeTable[0x57] = delegate() {
+            testBit8(r.af.a, 2, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 3,B
+        cbeTable[0x58] = delegate() {
+            testBit8(r.bc.b, 3, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 3,C
+        cbeTable[0x59] = delegate() {
+            testBit8(r.bc.c, 3, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 3,D
+        cbeTable[0x5a] = delegate() {
+            testBit8(r.de.d, 3, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 3,E
+        cbeTable[0x5b] = delegate() {
+            testBit8(r.de.e, 3, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 3,H
+        cbeTable[0x5c] = delegate() {
+            testBit8(r.hl.h, 3, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 3,L
+        cbeTable[0x5d] = delegate() {
+            testBit8(r.hl.l, 3, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 3,(HL)
+        cbeTable[0x5e] = delegate() {
+            ubyte v = read8(r.hl.v);
+            testBit8(v, 3, r.af.f);
+            return ubyte(16);
+        };
+
+        // BIT 3,A
+        cbeTable[0x5f] = delegate() {
+            testBit8(r.af.a, 3, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 4,B
+        cbeTable[0x60] = delegate() {
+            testBit8(r.bc.b, 4, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 4,C
+        cbeTable[0x61] = delegate() {
+            testBit8(r.bc.c, 4, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 4,D
+        cbeTable[0x62] = delegate() {
+            testBit8(r.de.d, 4, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 4,E
+        cbeTable[0x63] = delegate() {
+            testBit8(r.de.e, 4, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 4,H
+        cbeTable[0x64] = delegate() {
+            testBit8(r.hl.h, 4, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 4,L
+        cbeTable[0x65] = delegate() {
+            testBit8(r.hl.l, 4, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 4,(HL)
+        cbeTable[0x66] = delegate() {
+            ubyte v = read8(r.hl.v);
+            testBit8(v, 4, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 4,A
+        cbeTable[0x67] = delegate() {
+            testBit8(r.af.a, 4, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 5,B
+        cbeTable[0x68] = delegate() {
+            testBit8(r.bc.b, 5, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 5,C
+        cbeTable[0x69] = delegate() {
+            testBit8(r.bc.c, 5, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 5,D
+        cbeTable[0x6a] = delegate() {
+            testBit8(r.de.d, 5, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 5,E
+        cbeTable[0x6b] = delegate() {
+            testBit8(r.de.e, 5, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 5,H
+        cbeTable[0x6c] = delegate() {
+            testBit8(r.hl.h, 5, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 5,L
+        cbeTable[0x6d] = delegate() {
+            testBit8(r.hl.l, 5, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 5,(HL)
+        cbeTable[0x6e] = delegate() {
+            ubyte v = read8(r.hl.v);
+            testBit8(v, 5, r.af.f);
+            return ubyte(16);
+        };
+
+        // BIT 5,A
+        cbeTable[0x6f] = delegate() {
+            testBit8(r.af.a, 5, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 6,B
+        cbeTable[0x70] = delegate() {
+            testBit8(r.bc.b, 6, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 6,C
+        cbeTable[0x71] = delegate() {
+            testBit8(r.bc.c, 6, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 6,D
+        cbeTable[0x72] = delegate() {
+            testBit8(r.de.d, 6, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 6,E
+        cbeTable[0x73] = delegate() {
+            testBit8(r.de.e, 6, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 6,H
+        cbeTable[0x74] = delegate() {
+            testBit8(r.hl.h, 6, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 6,L
+        cbeTable[0x75] = delegate() {
+            testBit8(r.hl.l, 6, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 6,(HL)
+        cbeTable[0x76] = delegate() {
+            ubyte v = read8(r.hl.v);
+            testBit8(v, 6, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 6,A
+        cbeTable[0x77] = delegate() {
+            testBit8(r.af.a, 6, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 7,B
+        cbeTable[0x78] = delegate() {
+            testBit8(r.bc.b, 7, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 7,C
+        cbeTable[0x79] = delegate() {
+            testBit8(r.bc.c, 7, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 7,D
+        cbeTable[0x7a] = delegate() {
+            testBit8(r.de.d, 7, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 7,E
+        cbeTable[0x7b] = delegate() {
+            testBit8(r.de.e, 7, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 7,H
+        cbeTable[0x7c] = delegate() {
+            testBit8(r.hl.h, 7, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 7,L
+        cbeTable[0x7d] = delegate() {
+            testBit8(r.hl.l, 7, r.af.f);
+            return ubyte(8);
+        };
+
+        // BIT 7,(HL)
+        cbeTable[0x7e] = delegate() {
+            ubyte v = read8(r.hl.v);
+            testBit8(v, 7, r.af.f);
+            return ubyte(16);
+        };
+
+        // BIT 7,A
+        cbeTable[0x7f] = delegate() {
+            testBit8(r.af.a, 7, r.af.f);
+            return ubyte(8);
+        };
+
+        // RES 0,B
+        cbeTable[0x80] = delegate() {
+            resetBit8(r.bc.b, 0);
+            return ubyte(8);
+        };
+
+        // RES 0,C
+        cbeTable[0x81] = delegate() {
+            resetBit8(r.bc.c, 0);
+            return ubyte(8);
+        };
+
+        // RES 0,D
+        cbeTable[0x82] = delegate() {
+            resetBit8(r.de.d, 0);
+            return ubyte(8);
+        };
+
+        // RES 0,E
+        cbeTable[0x83] = delegate() {
+            resetBit8(r.de.e, 0);
+            return ubyte(8);
+        };
+
+        // RES 0,H
+        cbeTable[0x84] = delegate() {
+            resetBit8(r.hl.h, 0);
+            return ubyte(8);
+        };
+
+        // RES 0,L
+        cbeTable[0x85] = delegate() {
+            resetBit8(r.hl.l, 0);
+            return ubyte(8);
+        };
+
+        // RES 0,(HL)
+        cbeTable[0x86] = delegate() {
+            ubyte v = read8(r.hl.v);
+            resetBit8(v, 0);
+            return ubyte(8);
+        };
+
+        // RES 0,A
+        cbeTable[0x87] = delegate() {
+            resetBit8(r.af.a, 0);
+            return ubyte(8);
+        };
+
+        // RES 1,B
+        cbeTable[0x88] = delegate() {
+            resetBit8(r.bc.b, 1);
+            return ubyte(8);
+        };
+
+        // RES 1,C
+        cbeTable[0x89] = delegate() {
+            resetBit8(r.bc.c, 1);
+            return ubyte(8);
+        };
+
+        // RES 1,D
+        cbeTable[0x8a] = delegate() {
+            resetBit8(r.de.d, 1);
+            return ubyte(8);
+        };
+
+        // RES 1,E
+        cbeTable[0x8b] = delegate() {
+            resetBit8(r.de.e, 1);
+            return ubyte(8);
+        };
+
+        // RES 1,H
+        cbeTable[0x8c] = delegate() {
+            resetBit8(r.hl.h, 1);
+            return ubyte(8);
+        };
+
+        // RES 1,L
+        cbeTable[0x8d] = delegate() {
+            resetBit8(r.hl.l, 1);
+            return ubyte(8);
+        };
+
+        // RES 1,(HL)
+        cbeTable[0x8e] = delegate() {
+            ubyte v = read8(r.hl.v);
+            resetBit8(v, 1);
+            return ubyte(16);
+        };
+
+        // RES 1,A
+        cbeTable[0x8f] = delegate() {
+            resetBit8(r.af.a, 1);
+            return ubyte(8);
+        };
+
+        // RES 2,B
+        cbeTable[0x90] = delegate() {
+            resetBit8(r.bc.b, 2);
+            return ubyte(8);
+        };
+
+        // RES 2,C
+        cbeTable[0x91] = delegate() {
+            resetBit8(r.bc.c, 2);
+            return ubyte(8);
+        };
+
+        // RES 2,D
+        cbeTable[0x92] = delegate() {
+            resetBit8(r.de.d, 2);
+            return ubyte(8);
+        };
+
+        // RES 2,E
+        cbeTable[0x93] = delegate() {
+            resetBit8(r.de.e, 2);
+            return ubyte(8);
+        };
+
+        // RES 2,H
+        cbeTable[0x94] = delegate() {
+            resetBit8(r.hl.h, 2);
+            return ubyte(8);
+        };
+
+        // RES 2,L
+        cbeTable[0x95] = delegate() {
+            resetBit8(r.hl.l, 2);
+            return ubyte(8);
+        };
+
+        // RES 2,(HL)
+        cbeTable[0x96] = delegate() {
+            ubyte v = read8(r.hl.v);
+            resetBit8(v, 2);
+            return ubyte(8);
+        };
+
+        // RES 2,A
+        cbeTable[0x97] = delegate() {
+            resetBit8(r.af.a, 2);
+            return ubyte(8);
+        };
+
+        // RES 3,B
+        cbeTable[0x98] = delegate() {
+            resetBit8(r.bc.b, 3);
+            return ubyte(8);
+        };
+
+        // RES 3,C
+        cbeTable[0x99] = delegate() {
+            resetBit8(r.bc.c, 3);
+            return ubyte(8);
+        };
+
+        // RES 3,D
+        cbeTable[0x9a] = delegate() {
+            resetBit8(r.de.d, 3);
+            return ubyte(8);
+        };
+
+        // RES 3,E
+        cbeTable[0x9b] = delegate() {
+            resetBit8(r.de.e, 3);
+            return ubyte(8);
+        };
+
+        // RES 3,H
+        cbeTable[0x9c] = delegate() {
+            resetBit8(r.hl.h, 3);
+            return ubyte(8);
+        };
+
+        // RES 3,L
+        cbeTable[0x9d] = delegate() {
+            resetBit8(r.hl.l, 3);
+            return ubyte(8);
+        };
+
+        // RES 3,(HL)
+        cbeTable[0x9e] = delegate() {
+            ubyte v = read8(r.hl.v);
+            resetBit8(v, 3);
+            return ubyte(16);
+        };
+
+        // RES 3,A
+        cbeTable[0x9f] = delegate() {
+            resetBit8(r.af.a, 3);
+            return ubyte(8);
+        };
+
+        // RES 4,B
+        cbeTable[0xa0] = delegate() {
+            resetBit8(r.bc.b, 4);
+            return ubyte(8);
+        };
+
+        // RES 4,C
+        cbeTable[0xa1] = delegate() {
+            resetBit8(r.bc.c, 4);
+            return ubyte(8);
+        };
+
+        // RES 4,D
+        cbeTable[0xa2] = delegate() {
+            resetBit8(r.de.d, 4);
+            return ubyte(8);
+        };
+
+        // RES 4,E
+        cbeTable[0xa3] = delegate() {
+            resetBit8(r.de.e, 4);
+            return ubyte(8);
+        };
+
+        // RES 4,H
+        cbeTable[0xa4] = delegate() {
+            resetBit8(r.hl.h, 4);
+            return ubyte(8);
+        };
+
+        // RES 4,L
+        cbeTable[0xa5] = delegate() {
+            resetBit8(r.hl.l, 4);
+            return ubyte(8);
+        };
+
+        // RES 4,(HL)
+        cbeTable[0xa6] = delegate() {
+            ubyte v = read8(r.hl.v);
+            resetBit8(v, 4);
+            return ubyte(8);
+        };
+
+        // RES 4,A
+        cbeTable[0xa7] = delegate() {
+            resetBit8(r.af.a, 4);
+            return ubyte(8);
+        };
+
+        // RES 5,B
+        cbeTable[0xa8] = delegate() {
+            resetBit8(r.bc.b, 5);
+            return ubyte(8);
+        };
+
+        // RES 5,C
+        cbeTable[0xa9] = delegate() {
+            resetBit8(r.bc.c, 5);
+            return ubyte(8);
+        };
+
+        // RES 5,D
+        cbeTable[0xaa] = delegate() {
+            resetBit8(r.de.d, 5);
+            return ubyte(8);
+        };
+
+        // RES 5,E
+        cbeTable[0xab] = delegate() {
+            resetBit8(r.de.e, 5);
+            return ubyte(8);
+        };
+
+        // RES 5,H
+        cbeTable[0xac] = delegate() {
+            resetBit8(r.hl.h, 5);
+            return ubyte(8);
+        };
+
+        // RES 5,L
+        cbeTable[0xad] = delegate() {
+            resetBit8(r.hl.l, 5);
+            return ubyte(8);
+        };
+
+        // RES 5,(HL)
+        cbeTable[0xae] = delegate() {
+            ubyte v = read8(r.hl.v);
+            resetBit8(v, 5);
+            return ubyte(16);
+        };
+
+        // RES 5,A
+        cbeTable[0xaf] = delegate() {
+            resetBit8(r.af.a, 5);
+            return ubyte(8);
+        };
+
+        // RES 6,B
+        cbeTable[0xb0] = delegate() {
+            resetBit8(r.bc.b, 6);
+            return ubyte(8);
+        };
+
+        // RES 6,C
+        cbeTable[0xb1] = delegate() {
+            resetBit8(r.bc.c, 6);
+            return ubyte(8);
+        };
+
+        // RES 6,D
+        cbeTable[0xb2] = delegate() {
+            resetBit8(r.de.d, 6);
+            return ubyte(8);
+        };
+
+        // RES 6,E
+        cbeTable[0xb3] = delegate() {
+            resetBit8(r.de.e, 6);
+            return ubyte(8);
+        };
+
+        // RES 6,H
+        cbeTable[0xb4] = delegate() {
+            resetBit8(r.hl.h, 6);
+            return ubyte(8);
+        };
+
+        // RES 6,L
+        cbeTable[0xb5] = delegate() {
+            resetBit8(r.hl.l, 6);
+            return ubyte(8);
+        };
+
+        // RES 6,(HL)
+        cbeTable[0xb6] = delegate() {
+            ubyte v = read8(r.hl.v);
+            resetBit8(v, 6);
+            return ubyte(8);
+        };
+
+        // RES 6,A
+        cbeTable[0xb7] = delegate() {
+            resetBit8(r.af.a, 6);
+            return ubyte(8);
+        };
+
+        // RES 7,B
+        cbeTable[0xb8] = delegate() {
+            resetBit8(r.bc.b, 7);
+            return ubyte(8);
+        };
+
+        // RES 7,C
+        cbeTable[0xb9] = delegate() {
+            resetBit8(r.bc.c, 7);
+            return ubyte(8);
+        };
+
+        // RES 7,D
+        cbeTable[0xba] = delegate() {
+            resetBit8(r.de.d, 7);
+            return ubyte(8);
+        };
+
+        // RES 7,E
+        cbeTable[0xbb] = delegate() {
+            resetBit8(r.de.e, 7);
+            return ubyte(8);
+        };
+
+        // RES 7,H
+        cbeTable[0xbc] = delegate() {
+            resetBit8(r.hl.h, 7);
+            return ubyte(8);
+        };
+
+        // RES 7,L
+        cbeTable[0xbd] = delegate() {
+            resetBit8(r.hl.l, 7);
+            return ubyte(8);
+        };
+
+        // RES 7,(HL)
+        cbeTable[0xbe] = delegate() {
+            ubyte v = read8(r.hl.v);
+            resetBit8(v, 7);
+            return ubyte(16);
+        };
+
+        // RES 7,A
+        cbeTable[0xbf] = delegate() {
+            resetBit8(r.af.a, 7);
+            return ubyte(8);
+        };
+
+        // SET 0,B
+        cbeTable[0xc0] = delegate() {
+            setBit8(r.bc.b, 0);
+            return ubyte(8);
+        };
+
+        // SET 0,C
+        cbeTable[0xc1] = delegate() {
+            setBit8(r.bc.c, 0);
+            return ubyte(8);
+        };
+
+        // SET 0,D
+        cbeTable[0xc2] = delegate() {
+            setBit8(r.de.d, 0);
+            return ubyte(8);
+        };
+
+        // SET 0,E
+        cbeTable[0xc3] = delegate() {
+            setBit8(r.de.e, 0);
+            return ubyte(8);
+        };
+
+        // SET 0,H
+        cbeTable[0xc4] = delegate() {
+            setBit8(r.hl.h, 0);
+            return ubyte(8);
+        };
+
+        // SET 0,L
+        cbeTable[0xc5] = delegate() {
+            setBit8(r.hl.l, 0);
+            return ubyte(8);
+        };
+
+        // SET 0,(HL)
+        cbeTable[0xc6] = delegate() {
+            ubyte v = read8(r.hl.v);
+            setBit8(v, 0);
+            return ubyte(8);
+        };
+
+        // SET 0,A
+        cbeTable[0xc7] = delegate() {
+            setBit8(r.af.a, 0);
+            return ubyte(8);
+        };
+
+        // SET 1,B
+        cbeTable[0xc8] = delegate() {
+            setBit8(r.bc.b, 1);
+            return ubyte(8);
+        };
+
+        // SET 1,C
+        cbeTable[0xc9] = delegate() {
+            setBit8(r.bc.c, 1);
+            return ubyte(8);
+        };
+
+        // SET 1,D
+        cbeTable[0xca] = delegate() {
+            setBit8(r.de.d, 1);
+            return ubyte(8);
+        };
+
+        // SET 1,E
+        cbeTable[0xcb] = delegate() {
+            setBit8(r.de.e, 1);
+            return ubyte(8);
+        };
+
+        // SET 1,H
+        cbeTable[0xcc] = delegate() {
+            setBit8(r.hl.h, 1);
+            return ubyte(8);
+        };
+
+        // SET 1,L
+        cbeTable[0xcd] = delegate() {
+            setBit8(r.hl.l, 1);
+            return ubyte(8);
+        };
+
+        // SET 1,(HL)
+        cbeTable[0xce] = delegate() {
+            ubyte v = read8(r.hl.v);
+            setBit8(v, 1);
+            return ubyte(16);
+        };
+
+        // SET 1,A
+        cbeTable[0xcf] = delegate() {
+            setBit8(r.af.a, 1);
+            return ubyte(8);
+        };
+
+        // SET 2,B
+        cbeTable[0xd0] = delegate() {
+            setBit8(r.bc.b, 2);
+            return ubyte(8);
+        };
+
+        // SET 2,C
+        cbeTable[0xd1] = delegate() {
+            setBit8(r.bc.c, 2);
+            return ubyte(8);
+        };
+
+        // SET 2,D
+        cbeTable[0xd2] = delegate() {
+            setBit8(r.de.d, 2);
+            return ubyte(8);
+        };
+
+        // SET 2,E
+        cbeTable[0xd3] = delegate() {
+            setBit8(r.de.e, 2);
+            return ubyte(8);
+        };
+
+        // SET 2,H
+        cbeTable[0xd4] = delegate() {
+            setBit8(r.hl.h, 2);
+            return ubyte(8);
+        };
+
+        // SET 2,L
+        cbeTable[0xd5] = delegate() {
+            setBit8(r.hl.l, 2);
+            return ubyte(8);
+        };
+
+        // SET 2,(HL)
+        cbeTable[0xd6] = delegate() {
+            ubyte v = read8(r.hl.v);
+            setBit8(v, 2);
+            return ubyte(8);
+        };
+
+        // SET 2,A
+        cbeTable[0xd7] = delegate() {
+            setBit8(r.af.a, 2);
+            return ubyte(8);
+        };
+
+        // SET 3,B
+        cbeTable[0xd8] = delegate() {
+            setBit8(r.bc.b, 3);
+            return ubyte(8);
+        };
+
+        // SET 3,C
+        cbeTable[0xd9] = delegate() {
+            setBit8(r.bc.c, 3);
+            return ubyte(8);
+        };
+
+        // SET 3,D
+        cbeTable[0xda] = delegate() {
+            setBit8(r.de.d, 3);
+            return ubyte(8);
+        };
+
+        // SET 3,E
+        cbeTable[0xdb] = delegate() {
+            setBit8(r.de.e, 3);
+            return ubyte(8);
+        };
+
+        // SET 3,H
+        cbeTable[0xdc] = delegate() {
+            setBit8(r.hl.h, 3);
+            return ubyte(8);
+        };
+
+        // SET 3,L
+        cbeTable[0xdd] = delegate() {
+            setBit8(r.hl.l, 3);
+            return ubyte(8);
+        };
+
+        // SET 3,(HL)
+        cbeTable[0xde] = delegate() {
+            ubyte v = read8(r.hl.v);
+            setBit8(v, 3);
+            return ubyte(16);
+        };
+
+        // SET 3,A
+        cbeTable[0xdf] = delegate() {
+            setBit8(r.af.a, 3);
+            return ubyte(8);
+        };
+
+        // SET 4,B
+        cbeTable[0xe0] = delegate() {
+            setBit8(r.bc.b, 4);
+            return ubyte(8);
+        };
+
+        // SET 4,C
+        cbeTable[0xe1] = delegate() {
+            setBit8(r.bc.c, 4);
+            return ubyte(8);
+        };
+
+        // SET 4,D
+        cbeTable[0xe2] = delegate() {
+            setBit8(r.de.d, 4);
+            return ubyte(8);
+        };
+
+        // SET 4,E
+        cbeTable[0xe3] = delegate() {
+            setBit8(r.de.e, 4);
+            return ubyte(8);
+        };
+
+        // SET 4,H
+        cbeTable[0xe4] = delegate() {
+            setBit8(r.hl.h, 4);
+            return ubyte(8);
+        };
+
+        // SET 4,L
+        cbeTable[0xe5] = delegate() {
+            setBit8(r.hl.l, 4);
+            return ubyte(8);
+        };
+
+        // SET 4,(HL)
+        cbeTable[0xe6] = delegate() {
+            ubyte v = read8(r.hl.v);
+            setBit8(v, 4);
+            return ubyte(8);
+        };
+
+        // SET 4,A
+        cbeTable[0xe7] = delegate() {
+            setBit8(r.af.a, 4);
+            return ubyte(8);
+        };
+
+        // SET 5,B
+        cbeTable[0xe8] = delegate() {
+            setBit8(r.bc.b, 5);
+            return ubyte(8);
+        };
+
+        // SET 5,C
+        cbeTable[0xe9] = delegate() {
+            setBit8(r.bc.c, 5);
+            return ubyte(8);
+        };
+
+        // SET 5,D
+        cbeTable[0xea] = delegate() {
+            setBit8(r.de.d, 5);
+            return ubyte(8);
+        };
+
+        // SET 5,E
+        cbeTable[0xeb] = delegate() {
+            setBit8(r.de.e, 5);
+            return ubyte(8);
+        };
+
+        // SET 5,H
+        cbeTable[0xec] = delegate() {
+            setBit8(r.hl.h, 5);
+            return ubyte(8);
+        };
+
+        // SET 5,L
+        cbeTable[0xed] = delegate() {
+            setBit8(r.hl.l, 5);
+            return ubyte(8);
+        };
+
+        // SET 5,(HL)
+        cbeTable[0xee] = delegate() {
+            ubyte v = read8(r.hl.v);
+            setBit8(v, 5);
+            return ubyte(16);
+        };
+
+        // SET 5,A
+        cbeTable[0xef] = delegate() {
+            setBit8(r.af.a, 5);
+            return ubyte(8);
+        };
+
+        // SET 6,B
+        cbeTable[0xf0] = delegate() {
+            setBit8(r.bc.b, 6);
+            return ubyte(8);
+        };
+
+        // SET 6,C
+        cbeTable[0xf1] = delegate() {
+            setBit8(r.bc.c, 6);
+            return ubyte(8);
+        };
+
+        // SET 6,D
+        cbeTable[0xf2] = delegate() {
+            setBit8(r.de.d, 6);
+            return ubyte(8);
+        };
+
+        // SET 6,E
+        cbeTable[0xf3] = delegate() {
+            setBit8(r.de.e, 6);
+            return ubyte(8);
+        };
+
+        // SET 6,H
+        cbeTable[0xf4] = delegate() {
+            setBit8(r.hl.h, 6);
+            return ubyte(8);
+        };
+
+        // SET 6,L
+        cbeTable[0xf5] = delegate() {
+            setBit8(r.hl.l, 6);
+            return ubyte(8);
+        };
+
+        // SET 6,(HL)
+        cbeTable[0xf6] = delegate() {
+            ubyte v = read8(r.hl.v);
+            setBit8(v, 6);
+            return ubyte(8);
+        };
+
+        // SET 6,A
+        cbeTable[0xf7] = delegate() {
+            setBit8(r.af.a, 6);
+            return ubyte(8);
+        };
+
+        // SET 7,B
+        cbeTable[0xf8] = delegate() {
+            setBit8(r.bc.b, 7);
+            return ubyte(8);
+        };
+
+        // SET 7,C
+        cbeTable[0xf9] = delegate() {
+            setBit8(r.bc.c, 7);
+            return ubyte(8);
+        };
+
+        // SET 7,D
+        cbeTable[0xfa] = delegate() {
+            setBit8(r.de.d, 7);
+            return ubyte(8);
+        };
+
+        // SET 7,E
+        cbeTable[0xfb] = delegate() {
+            setBit8(r.de.e, 7);
+            return ubyte(8);
+        };
+
+        // SET 7,H
+        cbeTable[0xfc] = delegate() {
+            setBit8(r.hl.h, 7);
+            return ubyte(8);
+        };
+
+        // SET 7,L
+        cbeTable[0xfd] = delegate() {
+            setBit8(r.hl.l, 7);
+            return ubyte(8);
+        };
+
+        // SET 7,(HL)
+        cbeTable[0xfe] = delegate() {
+            ubyte v = read8(r.hl.v);
+            setBit8(v, 7);
+            return ubyte(16);
+        };
+
+        // SET 7,A
+        cbeTable[0xff] = delegate() {
+            setBit8(r.af.a, 7);
+            return ubyte(8);
         };
     }
 
