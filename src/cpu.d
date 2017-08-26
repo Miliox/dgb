@@ -12,12 +12,23 @@ union AF {
     }
     ushort v;
 };
+
 align(2):
 union BC {
     align(1):
     struct {
         ubyte c;
         ubyte b;
+    }
+    ushort v;
+};
+
+align(2):
+union DE {
+    align(1):
+    struct {
+        ubyte e;
+        ubyte d;
     }
     ushort v;
 };
@@ -36,6 +47,7 @@ static struct Registers
 {
     AF af;
     BC bc;
+    DE de;
     HL hl;
     ushort sp;  // special
     ushort pc;  // program counter
@@ -96,6 +108,7 @@ class Cpu
     {
         r.af.v = 0;
         r.bc.v = 0;
+        r.de.v = 0;
         r.hl.v = 0;
         r.sp = 0;
         r.pc = 0;
