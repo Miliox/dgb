@@ -127,7 +127,7 @@ class Cpu
 
         // INC BC
         isaTable[0x03] = delegate() {
-            inc16(r.bc.v, r.af.f);
+            inc16(r.bc.v);
             return ubyte(8);
         };
 
@@ -156,10 +156,10 @@ class Cpu
             r.af.f = 0;
             if (r.af.a & 0x01) {
                 r.af.a = r.af.a & 0xFE;
-                setFlag(r.af.f, FLAG_CARRY);
+                setFlag(r.af.f, FLAG_CARRY, true);
             }
             if (r.af.a == 0) {
-                setFlag(r.af.f, FLAG_ZERO);
+                setFlag(r.af.f, FLAG_ZERO, true);
             }
             return ubyte(4);
         };
@@ -185,7 +185,7 @@ class Cpu
 
         // DEC BC
         isaTable[0x0b] = delegate() {
-            dec16(r.bc.v, r.af.f);
+            dec16(r.bc.v);
             return ubyte(8);
         };
 
@@ -214,11 +214,9 @@ class Cpu
             r.af.f = 0;
             if (r.af.a & 0x80) {
                 r.af.a = r.af.a & 0x7F;
-                setFlag(r.af.f, FLAG_CARRY);
+                setFlag(r.af.f, FLAG_CARRY, true);
             }
-            if (r.af.a == 0) {
-                setFlag(r.af.f, FLAG_ZERO);
-            }
+            setFlag(r.af.f, FLAG_ZERO, r.af.a == 0);
             return ubyte(4);
         };
     }
@@ -239,29 +237,29 @@ class Cpu
         assert(cpu.r.af.f == (Cpu.FLAG_ZERO|Cpu.FLAG_CARRY));
     }
 
-    // auxiliary methods
+    // auxiliary functions
 
-    /// set bitflag to flags
-    private static pure void setFlag(ref ubyte flags, ubyte bitflag) {
-        flags |= bitflag;
+    // set mask if set else resets
+    private static pure void setFlag(ref ubyte flags, ubyte mask, ubyte set)
+    {
+        if (set)
+        {
+            flags |= mask;
+        }
+        else // reset
+        {
+            flags &= ~mask;
+        }
     }
 
     unittest
     {
         ubyte flags = 0x80;
-        setFlag(flags, 0x04);
+        setFlag(flags, 0x04, true);
         assert(flags == 0x84);
-    }
 
-    /// reset bitflag on flags
-    private static pure void resetFlag(ref ubyte flags, ubyte bitflag) {
-        flags &= ~bitflag;
-    }
-
-    unittest
-    {
-        ubyte flags = 0xff;
-        resetFlag(flags, 0x88);
+        flags = 0xff;
+        setFlag(flags, 0x88, false);
         assert(flags == 0x77);
     }
 
@@ -273,22 +271,10 @@ class Cpu
         bool fullCarry = (ushort(acc) + ushort(reg)) > 0xff; // carry from bit 7
         acc += reg;
 
-        resetFlag(f, FLAG_NEG);
-
-        if (acc == 0)
-        {
-            setFlag(f, FLAG_ZERO);
-        }
-
-        if (halfCarry)
-        {
-            setFlag(f, FLAG_HALF);
-        }
-
-        if (fullCarry)
-        {
-            setFlag(f, FLAG_CARRY);
-        }
+        setFlag(f, FLAG_NEG,   false);
+        setFlag(f, FLAG_ZERO,  acc == 0);
+        setFlag(f, FLAG_HALF,  halfCarry);
+        setFlag(f, FLAG_CARRY, fullCarry);
     }
 
     unittest
@@ -323,22 +309,10 @@ class Cpu
         bool fullCarry = (ushort(acc) + ushort(reg) + carry) > 0xff; // carry from bit 7
         acc += reg + carry;
 
-        resetFlag(f, FLAG_NEG);
-
-        if (acc == 0)
-        {
-            setFlag(f, FLAG_ZERO);
-        }
-
-        if (halfCarry)
-        {
-            setFlag(f, FLAG_HALF);
-        }
-
-        if (fullCarry)
-        {
-            setFlag(f, FLAG_CARRY);
-        }
+        setFlag(f, FLAG_NEG,   false);
+        setFlag(f, FLAG_ZERO,  acc == 0);
+        setFlag(f, FLAG_HALF,  halfCarry);
+        setFlag(f, FLAG_CARRY, fullCarry);
     }
 
     unittest
@@ -349,13 +323,13 @@ class Cpu
         ubyte flags = (FLAG_NEG | FLAG_CARRY); // must be reset
         adc8(acc, reg, flags);
         assert(acc == 1);
-        assert(flags == FLAG_CARRY);
+        assert(flags == 0);
 
         // test half carry and carry increment
         acc = 1; reg = 127; flags = FLAG_CARRY;
         adc8(acc, reg, flags);
         assert(acc == 129);
-        assert(flags == (FLAG_HALF | FLAG_CARRY));
+        assert(flags == (FLAG_HALF));
 
         // test half carry set
         acc = 1; reg = 127; flags = 0;
@@ -394,22 +368,10 @@ class Cpu
         // sub operation
         acc -= reg;
 
-        setFlag(f, FLAG_NEG);
-
-        if (acc == 0)
-        {
-            setFlag(f, FLAG_ZERO);
-        }
-
-        if (halfCarry)
-        {
-            setFlag(f, FLAG_HALF);
-        }
-
-        if (fullCarry)
-        {
-            setFlag(f, FLAG_CARRY);
-        }
+        setFlag(f, FLAG_NEG,   true);
+        setFlag(f, FLAG_ZERO,  acc == 0);
+        setFlag(f, FLAG_HALF,  halfCarry);
+        setFlag(f, FLAG_CARRY, fullCarry);
     }
 
     unittest
@@ -455,12 +417,12 @@ class Cpu
         acc = 0x10; reg = 0x01; flags = FLAG_CARRY;
         sbc8(acc, reg, flags);
         assert(acc == 0x0e);
-        assert(flags == (FLAG_NEG | FLAG_CARRY));
+        assert(flags == (FLAG_NEG));
 
         acc = 0xf0; reg = 0x80; flags = FLAG_CARRY;
         sbc8(acc, reg, flags);
         assert(acc == 0x6f);
-        assert(flags == (FLAG_NEG | FLAG_CARRY));
+        assert(flags == (FLAG_NEG));
     }
 
     // and for 8 bit registers
@@ -468,13 +430,9 @@ class Cpu
     {
         acc &= reg;
 
-        resetFlag(f, FLAG_NEG | FLAG_CARRY);
-        setFlag(f, FLAG_HALF);
-
-        if (acc == 0)
-        {
-            setFlag(f, FLAG_ZERO);
-        }
+        setFlag(f, FLAG_HALF, true);
+        setFlag(f, FLAG_NEG | FLAG_CARRY, false);
+        setFlag(f, FLAG_ZERO, acc == 0);
     }
 
     unittest
@@ -497,11 +455,8 @@ class Cpu
     {
         acc |= reg;
 
-        resetFlag(f, FLAG_NEG | FLAG_HALF | FLAG_CARRY);
-        if (acc == 0)
-        {
-            setFlag(f, FLAG_ZERO);
-        }
+        setFlag(f, FLAG_NEG | FLAG_HALF | FLAG_CARRY, false);
+        setFlag(f, FLAG_ZERO, acc == 0);
     }
 
     unittest
@@ -526,11 +481,8 @@ class Cpu
     {
         acc ^= reg;
 
-        resetFlag(f, FLAG_NEG | FLAG_HALF | FLAG_CARRY);
-        if (acc == 0)
-        {
-            setFlag(f, FLAG_ZERO);
-        }
+        setFlag(f, FLAG_NEG | FLAG_HALF | FLAG_CARRY, false);
+        setFlag(f, FLAG_ZERO, acc == 0);
     }
 
     unittest
@@ -561,7 +513,7 @@ class Cpu
         // except for this modified behavior
         if (less)
         {
-            setFlag(f, FLAG_CARRY);
+            setFlag(f, FLAG_CARRY, true);
         }
     }
 
@@ -599,17 +551,9 @@ class Cpu
         bool halfCarry = (r & 0xf) == 0xf;
         r += 1;
 
-        resetFlag(f, FLAG_NEG);
-
-        if (halfCarry)
-        {
-            setFlag(f, FLAG_HALF);
-        }
-
-        if (r == 0)
-        {
-            setFlag(f, FLAG_ZERO);
-        }
+        setFlag(f, FLAG_ZERO,  r == 0);
+        setFlag(f, FLAG_NEG,   false);
+        setFlag(f, FLAG_HALF,  halfCarry);
     }
 
     unittest
@@ -626,21 +570,14 @@ class Cpu
         assert(flags == (FLAG_ZERO | FLAG_HALF));
     }
 
-    private static pure void dec8(ref ubyte r, ref ubyte f) {
+    private static pure void dec8(ref ubyte r, ref ubyte f)
+    {
         bool halfCarry = (r & 0xf) == 0;
         r -= 1;
 
-        setFlag(f, FLAG_NEG);
-
-        if (halfCarry)
-        {
-            setFlag(f, FLAG_HALF);
-        }
-
-        if (r == 0)
-        {
-            setFlag(f, FLAG_ZERO);
-        }
+        setFlag(f, FLAG_ZERO, r == 0);
+        setFlag(f, FLAG_NEG, true);
+        setFlag(f, FLAG_HALF, halfCarry);
     }
 
     unittest
@@ -660,23 +597,16 @@ class Cpu
     // 16 bits arithmetics
 
     // add for 16 bits registers
-    private static pure void add16(ref ushort acc, ushort reg, ref ubyte f) {
+    private static pure void add16(ref ushort acc, ushort reg, ref ubyte f)
+    {
         bool halfCarry = ((acc & 0xfff) + (reg & 0xfff)) > 0xfff;  // carry from bit 11
         bool fullCarry = (uint(acc) + uint(reg)) > 0xffff;         // carry from bit 15
 
         acc += reg;
 
-        resetFlag(f, FLAG_NEG);
-
-        if (halfCarry)
-        {
-            setFlag(f, FLAG_HALF);
-        }
-
-        if (fullCarry)
-        {
-            setFlag(f, FLAG_CARRY);
-        }
+        setFlag(f, FLAG_NEG,   false);
+        setFlag(f, FLAG_HALF,  halfCarry);
+        setFlag(f, FLAG_CARRY, fullCarry);
     }
 
     unittest
@@ -704,15 +634,54 @@ class Cpu
     }
 
     // inc for 16 bits registers
-    private static pure void inc16(ref ushort r, ref ubyte f) {
+    private static pure void inc16(ref ushort r)
+    {
         r += 1;
         // No flag effects
     }
 
+    unittest
+    {
+        ushort reg = 0;
+        inc16(reg);
+        assert(reg == 1);
+    }
+
     // dec for 16 bits registers
-    private static pure void dec16(ref ushort r, ref ubyte f) {
+    private static pure void dec16(ref ushort r)
+    {
         r -= 1;
         // No flag effects
     }
 
+    unittest
+    {
+        ushort reg = 1;
+        dec16(reg);
+        assert(reg == 0);
+    }
+
+    // Misc operations
+
+    private static pure void swap8(ref ubyte r, ref ubyte f)
+    {
+        r = ((r & 0x0f) << 4) | ((r & 0xf0) >> 4);
+
+        setFlag(f, FLAG_ZERO, r == 0);
+        setFlag(f, FLAG_NEG | FLAG_HALF | FLAG_CARRY, false);
+    }
+
+    unittest
+    {
+        ubyte reg = 0xab;
+        ubyte flags = 0;
+        swap8(reg, flags);
+        assert(reg == 0xba);
+        assert(flags == 0);
+
+        reg = 0; flags = 0;
+        swap8(reg, flags);
+        assert(reg == 0);
+        assert(flags == FLAG_ZERO);
+    }
 }
