@@ -327,6 +327,111 @@ class Cpu
             setFlag(r.af.f, FLAG_ZERO | FLAG_NEG | FLAG_HALF, false);
             return ubyte(4);
         };
+
+        // JR NZ,r8
+        isaTable[0x20] = delegate() {
+            byte offset = cast(byte) memory.read8(r.pc++);
+            if ((r.af.f & FLAG_ZERO) == 0) {
+                jr8(r.pc, offset);
+                return ubyte(12);
+            }
+            return ubyte(8);
+        };
+
+        // LD HL,d16
+        isaTable[0x21] = delegate() {
+            r.hl.v = memory.read16(r.pc);
+            r.pc += 2;
+            return ubyte(8);
+        };
+
+        // LD (HL+),A
+        isaTable[0x22] = delegate() {
+            memory.write8(r.hl.v++, r.af.a);
+            return ubyte(12);
+        };
+
+        // INC HL
+        isaTable[0x23] = delegate() {
+            inc16(r.hl.v);
+            return ubyte(8);
+        };
+
+        // INC H
+        isaTable[0x24] = delegate() {
+            inc8(r.hl.h, r.af.f);
+            return ubyte(8);
+        };
+
+        // DEC H
+        isaTable[0x25] = delegate() {
+            dec8(r.hl.h, r.af.f);
+            return ubyte(8);
+        };
+
+        // LD H,d8
+        isaTable[0x26] = delegate() {
+            r.hl.h = memory.read8(r.pc++);
+            return ubyte(8);
+        };
+
+        // DAA
+        isaTable[0x27] = delegate() {
+            daa8(r.af.a, r.af.f);
+            return ubyte(4);
+        };
+
+        // JR Z,r8
+        isaTable[0x28] = delegate() {
+            byte offset = cast(byte) memory.read8(r.pc++);
+            if ((r.af.f & FLAG_ZERO) != 0) {
+                jr8(r.pc, offset);
+                return ubyte(12);
+            }
+            return ubyte(8);
+        };
+
+        // ADD HL,HL
+        isaTable[0x29] = delegate() {
+            add16(r.hl.v, r.hl.v, r.af.f);
+            return ubyte(8);
+        };
+
+        // LD A,(HL+)
+        isaTable[0x2a] = delegate() {
+            r.af.a = memory.read8(r.hl.v++);
+            return ubyte(8);
+        };
+
+        // DEC HL
+        isaTable[0x2b] = delegate() {
+            dec16(r.hl.v);
+            return ubyte(8);
+        };
+
+        // INC L
+        isaTable[0x2c] = delegate() {
+            inc8(r.hl.l, r.af.f);
+            return ubyte(4);
+        };
+
+        // DEC L
+        isaTable[0x2d] = delegate() {
+            dec8(r.hl.l, r.af.f);
+            return ubyte(4);
+        };
+
+        // LD L,d8
+        isaTable[0x2e] = delegate() {
+            r.hl.l = memory.read8(r.pc++);
+            return ubyte(8);
+        };
+
+        // CPL
+        isaTable[0x2f] = delegate() {
+            cpl8(r.af.a, r.af.f);
+            return ubyte(8);
+        };
     }
 
     // test rlca
