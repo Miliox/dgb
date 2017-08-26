@@ -71,7 +71,15 @@ class Cpu
 {
     private Registers r;
 
-    private bool ime = false;      // interrupt master enable flag
+    // interrupt master enable flag
+    private bool ime = false;
+
+    // disable interrupt requested by DI (must disable ime after execute next instruction)
+    private bool diRequested = false;
+
+    // enable interrupt requested by EI (must enable ime after execute next instruction)
+    private bool eiRequested = false;
+
     private bool stopped = false;
     private bool halted  = false;
 
@@ -98,7 +106,7 @@ class Cpu
     ubyte step()
     {
         // fetch
-        ubyte opcode = memory.read8(r.pc++);
+        ubyte opcode = read8(r.pc++);
 
         // decode
         auto f = isaTable[opcode];
@@ -121,6 +129,27 @@ class Cpu
 
     // Helpers
 
+    private ubyte read8(ushort addr) {
+        return memory.read8(addr);
+    }
+
+    private ushort read16(ushort addr) {
+        ubyte lsb = memory.read8(addr++);
+        ubyte msb = memory.read8(addr);
+        return (msb << 8) + lsb;
+    }
+
+    private void write8(ushort addr, ubyte value) {
+        memory.write8(addr, value);
+    }
+
+    private void write16(ushort addr, ushort value) {
+        ubyte lsb = value & 0xff;
+        ubyte msb = (value >> 8) & 0xff;
+        memory.write8(addr++, lsb);
+        memory.write8(addr, msb);
+    }
+
     void fillIsa()
     {
         // TODO: Populate ISA Table
@@ -132,14 +161,14 @@ class Cpu
 
         // LD BC,d16
         isaTable[0x01] = delegate() {
-            r.bc.v = memory.read16(r.pc);
+            r.bc.v = read16(r.pc);
             r.pc += 2;
             return ubyte(12);
         };
 
         // LD (BC),A
         isaTable[0x02] = delegate() {
-            memory.write8(r.bc.v, r.af.a);
+            write8(r.bc.v, r.af.a);
             return ubyte(8);
         };
 
@@ -163,7 +192,7 @@ class Cpu
 
         // LD B,d8
         isaTable[0x06] = delegate() {
-            r.bc.b = memory.read8(r.pc);
+            r.bc.b = read8(r.pc);
             r.pc += 1;
             return ubyte(8);
         };
@@ -177,7 +206,7 @@ class Cpu
 
         // LD (a16),SP
         isaTable[0x08] = delegate() {
-            memory.write16(memory.read16(r.pc), r.sp);
+            write16(read16(r.pc), r.sp);
             r.pc += 2;
             return ubyte(20);
         };
@@ -190,7 +219,7 @@ class Cpu
 
         // LD A,(BC)
         isaTable[0x0a] = delegate() {
-            r.af.a = memory.read8(r.bc.v);
+            r.af.a = read8(r.bc.v);
             return ubyte(8);
         };
 
@@ -214,7 +243,7 @@ class Cpu
 
         // LD C,d8
         isaTable[0x0e] = delegate() {
-            r.bc.c = memory.read8(r.pc);
+            r.bc.c = read8(r.pc);
             r.pc += 1;
             return ubyte(8);
         };
@@ -228,7 +257,7 @@ class Cpu
 
         // STOP
         isaTable[0x10] = delegate() {
-            ubyte arg = memory.read8(r.pc++);
+            ubyte arg = read8(r.pc++);
             assert(arg == 0);
             stopped = true;
             return ubyte(4);
@@ -236,14 +265,14 @@ class Cpu
 
         // LD DE,d16
         isaTable[0x11] = delegate() {
-            r.de.v = memory.read16(r.pc);
+            r.de.v = read16(r.pc);
             r.pc += 2;
             return ubyte(12);
         };
 
         // LD (DE),A
         isaTable[0x12] = delegate() {
-            memory.write8(r.de.v, r.af.a);
+            write8(r.de.v, r.af.a);
             return ubyte(8);
         };
 
@@ -267,7 +296,7 @@ class Cpu
 
         // LD D,d8
         isaTable[0x16] = delegate() {
-            r.de.d = memory.read8(r.pc++);
+            r.de.d = read8(r.pc++);
             return ubyte(8);
         };
 
@@ -280,8 +309,8 @@ class Cpu
 
         // JR r8
         isaTable[0x18] = delegate() {
-            byte offset = cast(byte) memory.read8(r.pc++);
-            jr8(r.pc, offset);
+            byte offset = cast(byte) read8(r.pc++);
+            jr(offset);
             return ubyte(12);
         };
 
@@ -293,7 +322,7 @@ class Cpu
 
         // LD A,(DE)
         isaTable[0x1a] = delegate() {
-            r.af.a = memory.read8(r.de.v);
+            r.af.a = read8(r.de.v);
             return ubyte(8);
         };
 
@@ -317,7 +346,7 @@ class Cpu
 
         // LD E,d8
         isaTable[0x1e] = delegate() {
-            r.de.e = memory.read8(r.pc++);
+            r.de.e = read8(r.pc++);
             return ubyte(8);
         };
 
@@ -330,9 +359,9 @@ class Cpu
 
         // JR NZ,r8
         isaTable[0x20] = delegate() {
-            byte offset = cast(byte) memory.read8(r.pc++);
+            byte offset = cast(byte) read8(r.pc++);
             if ((r.af.f & FLAG_ZERO) == 0) {
-                jr8(r.pc, offset);
+                jr(offset);
                 return ubyte(12);
             }
             return ubyte(8);
@@ -340,14 +369,14 @@ class Cpu
 
         // LD HL,d16
         isaTable[0x21] = delegate() {
-            r.hl.v = memory.read16(r.pc);
+            r.hl.v = read16(r.pc);
             r.pc += 2;
             return ubyte(8);
         };
 
         // LD (HL+),A
         isaTable[0x22] = delegate() {
-            memory.write8(r.hl.v++, r.af.a);
+            write8(r.hl.v++, r.af.a);
             return ubyte(12);
         };
 
@@ -371,7 +400,7 @@ class Cpu
 
         // LD H,d8
         isaTable[0x26] = delegate() {
-            r.hl.h = memory.read8(r.pc++);
+            r.hl.h = read8(r.pc++);
             return ubyte(8);
         };
 
@@ -383,9 +412,9 @@ class Cpu
 
         // JR Z,r8
         isaTable[0x28] = delegate() {
-            byte offset = cast(byte) memory.read8(r.pc++);
+            byte offset = cast(byte) read8(r.pc++);
             if ((r.af.f & FLAG_ZERO) != 0) {
-                jr8(r.pc, offset);
+                jr(offset);
                 return ubyte(12);
             }
             return ubyte(8);
@@ -399,7 +428,7 @@ class Cpu
 
         // LD A,(HL+)
         isaTable[0x2a] = delegate() {
-            r.af.a = memory.read8(r.hl.v++);
+            r.af.a = read8(r.hl.v++);
             return ubyte(8);
         };
 
@@ -423,7 +452,7 @@ class Cpu
 
         // LD L,d8
         isaTable[0x2e] = delegate() {
-            r.hl.l = memory.read8(r.pc++);
+            r.hl.l = read8(r.pc++);
             return ubyte(8);
         };
 
@@ -435,9 +464,9 @@ class Cpu
 
         // JR NC,r8
         isaTable[0x30] = delegate() {
-            byte offset = cast(byte) memory.read8(r.pc++);
+            byte offset = cast(byte) read8(r.pc++);
             if ((r.af.f & FLAG_CARRY) == 0) {
-                jr8(r.pc, offset);
+                jr(offset);
                 return ubyte(12);
             }
             return ubyte(8);
@@ -445,14 +474,14 @@ class Cpu
 
         // LD SP,d16
         isaTable[0x31] = delegate() {
-            r.sp = memory.read16(r.pc);
+            r.sp = read16(r.pc);
             r.pc += 2;
             return ubyte(12);
         };
 
         // LD (HL-),A
         isaTable[0x32] = delegate() {
-            memory.write8(r.hl.v--, r.af.a);
+            write8(r.hl.v--, r.af.a);
             return ubyte(8);
         };
 
@@ -464,24 +493,24 @@ class Cpu
 
         // INC (HL)
         isaTable[0x34] = delegate() {
-            ubyte v = memory.read8(r.hl.v);
+            ubyte v = read8(r.hl.v);
             inc8(v, r.af.f);
-            memory.write(r.hl.v, v);
+            write(r.hl.v, v);
             return ubyte(12);
         };
 
         // DEC (HL)
         isaTable[0x35] = delegate() {
-            ubyte v = memory.read8(r.hl.v);
+            ubyte v = read8(r.hl.v);
             dec8(v, r.af.f);
-            memory.write(r.hl.v, v);
+            write(r.hl.v, v);
             return ubyte(12);
         };
 
         // LD (HL),d8
         isaTable[0x36] = delegate() {
-            ubyte arg = memory.read8(r.pc++);
-            memory.write8(r.hl.v, arg);
+            ubyte arg = read8(r.pc++);
+            write8(r.hl.v, arg);
             return ubyte(12);
         };
 
@@ -493,9 +522,9 @@ class Cpu
 
         // JR C,r8
         isaTable[0x38] = delegate() {
-            byte offset = cast(byte) memory.read8(r.pc++);
+            byte offset = cast(byte) read8(r.pc++);
             if ((r.af.f & FLAG_CARRY) != 0) {
-                jr8(r.pc, offset);
+                jr(offset);
                 return ubyte(12);
             }
             return ubyte(8);
@@ -509,7 +538,7 @@ class Cpu
 
         // LD A,(HL-)
         isaTable[0x3a] = delegate() {
-            r.af.a = memory.read8(r.hl.v--);
+            r.af.a = read8(r.hl.v--);
             return ubyte(8);
         };
 
@@ -533,7 +562,7 @@ class Cpu
 
         // LD A,d8
         isaTable[0x3e] = delegate() {
-            r.af.a = memory.read8(r.pc++);
+            r.af.a = read8(r.pc++);
             return ubyte(8);
         };
 
@@ -581,7 +610,7 @@ class Cpu
 
         // LD B,(HL)
         isaTable[0x46] = delegate() {
-            r.bc.b = memory.read8(r.hl.v);
+            r.bc.b = read8(r.hl.v);
             return ubyte(8);
         };
 
@@ -629,7 +658,7 @@ class Cpu
 
         // LD C,(HL)
         isaTable[0x4e] = delegate() {
-            r.bc.c = memory.read8(r.hl.v);
+            r.bc.c = read8(r.hl.v);
             return ubyte(8);
         };
 
@@ -677,7 +706,7 @@ class Cpu
 
         // LD D,(HL)
         isaTable[0x56] = delegate() {
-            r.de.d = memory.read8(r.hl.v);
+            r.de.d = read8(r.hl.v);
             return ubyte(8);
         };
 
@@ -725,7 +754,7 @@ class Cpu
 
         // LD E,(HL)
         isaTable[0x5e] = delegate() {
-            r.de.e = memory.read8(r.hl.v);
+            r.de.e = read8(r.hl.v);
             return ubyte(8);
         };
 
@@ -773,7 +802,7 @@ class Cpu
 
         // LD H,(HL)
         isaTable[0x66] = delegate() {
-            r.hl.h = memory.read8(r.hl.v);
+            r.hl.h = read8(r.hl.v);
             return ubyte(8);
         };
 
@@ -821,7 +850,7 @@ class Cpu
 
         // LD L,(HL)
         isaTable[0x6e] = delegate() {
-            r.hl.l = memory.read8(r.hl.v);
+            r.hl.l = read8(r.hl.v);
             return ubyte(8);
         };
 
@@ -833,37 +862,37 @@ class Cpu
 
         // LD (HL),B
         isaTable[0x70] = delegate() {
-            memory.write8(r.hl.v, r.bc.b);
+            write8(r.hl.v, r.bc.b);
             return ubyte(8);
         };
 
         // LD (HL),C
         isaTable[0x71] = delegate() {
-            memory.write8(r.hl.v, r.bc.c);
+            write8(r.hl.v, r.bc.c);
             return ubyte(8);
         };
 
         // LD (HL),D
         isaTable[0x72] = delegate() {
-            memory.write8(r.hl.v, r.de.d);
+            write8(r.hl.v, r.de.d);
             return ubyte(8);
         };
 
         // LD (HL),E
         isaTable[0x73] = delegate() {
-            memory.write8(r.hl.v, r.de.e);
+            write8(r.hl.v, r.de.e);
             return ubyte(8);
         };
 
         // LD (HL),H
         isaTable[0x74] = delegate() {
-            memory.write8(r.hl.v, r.hl.h);
+            write8(r.hl.v, r.hl.h);
             return ubyte(8);
         };
 
         // LD (HL),L
         isaTable[0x75] = delegate() {
-            memory.write8(r.hl.v, r.hl.l);
+            write8(r.hl.v, r.hl.l);
             return ubyte(8);
         };
 
@@ -875,7 +904,7 @@ class Cpu
 
         // LD (HL),A
         isaTable[0x77] = delegate() {
-            memory.write8(r.hl.v, r.af.a);
+            write8(r.hl.v, r.af.a);
             return ubyte(4);
         };
 
@@ -917,7 +946,7 @@ class Cpu
 
         // LD A,(HL)
         isaTable[0x7e] = delegate() {
-            r.af.a = memory.read8(r.hl.v);
+            r.af.a = read8(r.hl.v);
             return ubyte(8);
         };
 
@@ -925,6 +954,839 @@ class Cpu
         isaTable[0x7f] = delegate() {
             // r.af.a = r.af.a;
             return ubyte(4);
+        };
+
+        // ADD A,B
+        isaTable[0x80] = delegate() {
+            add8(r.af.a, r.bc.b, r.af.f);
+            return ubyte(4);
+        };
+
+        // ADD A,C
+        isaTable[0x81] = delegate() {
+            add8(r.af.a, r.bc.c, r.af.f);
+            return ubyte(4);
+        };
+
+        // ADD A,D
+        isaTable[0x82] = delegate() {
+            add8(r.af.a, r.de.d, r.af.f);
+            return ubyte(4);
+        };
+
+        // ADD A,E
+        isaTable[0x83] = delegate() {
+            add8(r.af.a, r.de.e, r.af.f);
+            return ubyte(4);
+        };
+
+        // ADD A,H
+        isaTable[0x84] = delegate() {
+            add8(r.af.a, r.hl.h, r.af.f);
+            return ubyte(4);
+        };
+
+        // ADD A,L
+        isaTable[0x85] = delegate() {
+            add8(r.af.a, r.hl.l, r.af.f);
+            return ubyte(4);
+        };
+
+        // ADD A,(HL)
+        isaTable[0x86] = delegate() {
+            ubyte v = read8(r.hl.v);
+            add8(r.af.a, v, r.af.f);
+            return ubyte(8);
+        };
+
+        // ADD A,A
+        isaTable[0x87] = delegate() {
+            add8(r.af.a, r.af.a, r.af.f);
+            return ubyte(4);
+        };
+
+        // ADC A,B
+        isaTable[0x88] = delegate() {
+            adc8(r.af.a, r.bc.b, r.af.f);
+            return ubyte(4);
+        };
+
+        // ADC A,C
+        isaTable[0x89] = delegate() {
+            adc8(r.af.a, r.bc.c, r.af.f);
+            return ubyte(4);
+        };
+
+        // ADC A,D
+        isaTable[0x8a] = delegate() {
+            adc8(r.af.a, r.de.d, r.af.f);
+            return ubyte(4);
+        };
+
+        // ADC A,E
+        isaTable[0x8b] = delegate() {
+            adc8(r.af.a, r.de.e, r.af.f);
+            return ubyte(4);
+        };
+
+        // ADC A,H
+        isaTable[0x8c] = delegate() {
+            adc8(r.af.a, r.hl.h, r.af.f);
+            return ubyte(4);
+        };
+
+        // ADC A,L
+        isaTable[0x8d] = delegate() {
+            adc8(r.af.a, r.hl.l, r.af.f);
+            return ubyte(4);
+        };
+
+        // ADC A,(HL)
+        isaTable[0x8e] = delegate() {
+            ubyte v = read8(r.hl.v);
+            adc8(r.af.a, v, r.af.f);
+            return ubyte(8);
+        };
+
+        // ADC A,A
+        isaTable[0x8f] = delegate() {
+            adc8(r.af.a, r.af.a, r.af.f);
+            return ubyte(4);
+        };
+
+        // SUB A,B
+        isaTable[0x90] = delegate() {
+            sub8(r.af.a, r.bc.b, r.af.f);
+            return ubyte(4);
+        };
+
+        // SUB A,C
+        isaTable[0x91] = delegate() {
+            sub8(r.af.a, r.bc.c, r.af.f);
+            return ubyte(4);
+        };
+
+        // SUB A,D
+        isaTable[0x92] = delegate() {
+            sub8(r.af.a, r.de.d, r.af.f);
+            return ubyte(4);
+        };
+
+        // SUB A,E
+        isaTable[0x93] = delegate() {
+            sub8(r.af.a, r.de.e, r.af.f);
+            return ubyte(4);
+        };
+
+        // SUB A,H
+        isaTable[0x94] = delegate() {
+            sub8(r.af.a, r.hl.h, r.af.f);
+            return ubyte(4);
+        };
+
+        // SUB A,L
+        isaTable[0x95] = delegate() {
+            sub8(r.af.a, r.hl.l, r.af.f);
+            return ubyte(4);
+        };
+
+        // SUB A,(HL)
+        isaTable[0x96] = delegate() {
+            ubyte v = read8(r.hl.v);
+            sub8(r.af.a, v, r.af.f);
+            return ubyte(8);
+        };
+
+        // SUB A,A
+        isaTable[0x97] = delegate() {
+            sub8(r.af.a, r.af.a, r.af.f);
+            return ubyte(4);
+        };
+
+        // SBC A,B
+        isaTable[0x98] = delegate() {
+            sbc8(r.af.a, r.bc.b, r.af.f);
+            return ubyte(4);
+        };
+
+        // SBC A,C
+        isaTable[0x99] = delegate() {
+            sbc8(r.af.a, r.bc.c, r.af.f);
+            return ubyte(4);
+        };
+
+        // SBC A,D
+        isaTable[0x9a] = delegate() {
+            sbc8(r.af.a, r.de.d, r.af.f);
+            return ubyte(4);
+        };
+
+        // SBC A,E
+        isaTable[0x9b] = delegate() {
+            sbc8(r.af.a, r.de.e, r.af.f);
+            return ubyte(4);
+        };
+
+        // SBC A,H
+        isaTable[0x9c] = delegate() {
+            sbc8(r.af.a, r.hl.h, r.af.f);
+            return ubyte(4);
+        };
+
+        // SBC A,L
+        isaTable[0x9d] = delegate() {
+            sbc8(r.af.a, r.hl.l, r.af.f);
+            return ubyte(4);
+        };
+
+        // SBC A,(HL)
+        isaTable[0x9e] = delegate() {
+            ubyte v = read8(r.hl.v);
+            sbc8(r.af.a, v, r.af.f);
+            return ubyte(8);
+        };
+
+        // SBC A,A
+        isaTable[0x9f] = delegate() {
+            sbc8(r.af.a, r.af.a, r.af.f);
+            return ubyte(4);
+        };
+
+        // AND A,B
+        isaTable[0xa0] = delegate() {
+            and8(r.af.a, r.bc.b, r.af.f);
+            return ubyte(4);
+        };
+
+        // AND A,C
+        isaTable[0xa1] = delegate() {
+            and8(r.af.a, r.bc.c, r.af.f);
+            return ubyte(4);
+        };
+
+        // AND A,D
+        isaTable[0xa2] = delegate() {
+            and8(r.af.a, r.de.d, r.af.f);
+            return ubyte(4);
+        };
+
+        // AND A,E
+        isaTable[0xa3] = delegate() {
+            and8(r.af.a, r.de.e, r.af.f);
+            return ubyte(4);
+        };
+
+        // AND A,H
+        isaTable[0xa4] = delegate() {
+            and8(r.af.a, r.hl.h, r.af.f);
+            return ubyte(4);
+        };
+
+        // AND A,L
+        isaTable[0xa5] = delegate() {
+            and8(r.af.a, r.hl.l, r.af.f);
+            return ubyte(4);
+        };
+
+        // AND A,(HL)
+        isaTable[0xa6] = delegate() {
+            ubyte v = read8(r.hl.v);
+            and8(r.af.a, v, r.af.f);
+            return ubyte(8);
+        };
+
+        // AND A,A
+        isaTable[0xa7] = delegate() {
+            and8(r.af.a, r.af.a, r.af.f);
+            return ubyte(4);
+        };
+
+        // XOR A,B
+        isaTable[0xa8] = delegate() {
+            xor8(r.af.a, r.bc.b, r.af.f);
+            return ubyte(4);
+        };
+
+        // XOR A,C
+        isaTable[0xa9] = delegate() {
+            xor8(r.af.a, r.bc.c, r.af.f);
+            return ubyte(4);
+        };
+
+        // XOR A,D
+        isaTable[0xaa] = delegate() {
+            xor8(r.af.a, r.de.d, r.af.f);
+            return ubyte(4);
+        };
+
+        // XOR A,E
+        isaTable[0xab] = delegate() {
+            xor8(r.af.a, r.de.e, r.af.f);
+            return ubyte(4);
+        };
+
+        // XOR A,H
+        isaTable[0xac] = delegate() {
+            xor8(r.af.a, r.hl.h, r.af.f);
+            return ubyte(4);
+        };
+
+        // XOR A,L
+        isaTable[0xad] = delegate() {
+            xor8(r.af.a, r.hl.l, r.af.f);
+            return ubyte(4);
+        };
+
+        // XOR A,(HL)
+        isaTable[0xae] = delegate() {
+            ubyte v = read8(r.hl.v);
+            xor8(r.af.a, v, r.af.f);
+            return ubyte(8);
+        };
+
+        // XOR A,A
+        isaTable[0xaf] = delegate() {
+            xor8(r.af.a, r.af.a, r.af.f);
+            return ubyte(4);
+        };
+
+        //
+
+        // OR A,B
+        isaTable[0xb0] = delegate() {
+            or8(r.af.a, r.bc.b, r.af.f);
+            return ubyte(4);
+        };
+
+        // OR A,C
+        isaTable[0xb1] = delegate() {
+            or8(r.af.a, r.bc.c, r.af.f);
+            return ubyte(4);
+        };
+
+        // OR A,D
+        isaTable[0xb2] = delegate() {
+            or8(r.af.a, r.de.d, r.af.f);
+            return ubyte(4);
+        };
+
+        // OR A,E
+        isaTable[0xb3] = delegate() {
+            or8(r.af.a, r.de.e, r.af.f);
+            return ubyte(4);
+        };
+
+        // OR A,H
+        isaTable[0xb4] = delegate() {
+            or8(r.af.a, r.hl.h, r.af.f);
+            return ubyte(4);
+        };
+
+        // OR A,L
+        isaTable[0xb5] = delegate() {
+            or8(r.af.a, r.hl.l, r.af.f);
+            return ubyte(4);
+        };
+
+        // OR A,(HL)
+        isaTable[0xb6] = delegate() {
+            ubyte v = read8(r.hl.v);
+            or8(r.af.a, v, r.af.f);
+            return ubyte(8);
+        };
+
+        // OR A,A
+        isaTable[0xb7] = delegate() {
+            or8(r.af.a, r.af.a, r.af.f);
+            return ubyte(4);
+        };
+
+        // CP A,B
+        isaTable[0xb8] = delegate() {
+            cp8(r.af.a, r.bc.b, r.af.f);
+            return ubyte(4);
+        };
+
+        // CP A,C
+        isaTable[0xb9] = delegate() {
+            cp8(r.af.a, r.bc.c, r.af.f);
+            return ubyte(4);
+        };
+
+        // CP A,D
+        isaTable[0xba] = delegate() {
+            cp8(r.af.a, r.de.d, r.af.f);
+            return ubyte(4);
+        };
+
+        // CP A,E
+        isaTable[0xbb] = delegate() {
+            cp8(r.af.a, r.de.e, r.af.f);
+            return ubyte(4);
+        };
+
+        // CP A,H
+        isaTable[0xbc] = delegate() {
+            cp8(r.af.a, r.hl.h, r.af.f);
+            return ubyte(4);
+        };
+
+        // CP A,L
+        isaTable[0xbd] = delegate() {
+            cp8(r.af.a, r.hl.l, r.af.f);
+            return ubyte(4);
+        };
+
+        // CP A,(HL)
+        isaTable[0xbe] = delegate() {
+            ubyte v = read8(r.hl.v);
+            cp8(r.af.a, v, r.af.f);
+            return ubyte(8);
+        };
+
+        // CP A,A
+        isaTable[0xbf] = delegate() {
+            cp8(r.af.a, r.af.a, r.af.f);
+            return ubyte(4);
+        };
+
+        // RET NZ
+        isaTable[0xc0] = delegate() {
+            if ((r.af.f & FLAG_ZERO) == 0) {
+                ret();
+                return ubyte(20);
+            }
+            return ubyte(8);
+        };
+
+        // POP BC
+        isaTable[0xc1] = delegate() {
+            pop(r.bc.v);
+            return ubyte(12);
+        };
+
+        // JP NZ,a16
+        isaTable[0xc2] = delegate() {
+            ushort addr = read16(r.pc);
+            r.pc += 2;
+
+            if ((r.af.f & FLAG_ZERO) == 0) {
+                jp(addr);
+                return ubyte(16);
+            }
+            return ubyte(12);
+        };
+
+        // JP a16
+        isaTable[0xc3] = delegate() {
+            jp(read16(r.pc));
+            return ubyte(16);
+        };
+
+        // CALL NZ,a16
+        isaTable[0xc4] = delegate() {
+            ushort addr = read16(r.pc);
+            r.pc += 2;
+
+            if ((r.af.f & FLAG_ZERO) == 0) {
+                call(addr);
+                return ubyte(16);
+            }
+            return ubyte(12);
+        };
+
+        // PUSH BC
+        isaTable[0xc5] = delegate() {
+            push(r.bc.v);
+            return ubyte(16);
+        };
+
+        // ADD A,d8
+        isaTable[0xc6] = delegate() {
+            ubyte v = read8(r.pc++);
+            add8(r.af.a, v, r.af.f);
+            return ubyte(8);
+        };
+
+        // RST 00H
+        isaTable[0xc7] = delegate() {
+            rst(0x00);
+            return ubyte(16);
+        };
+
+        // RET Z
+        isaTable[0xc8] = delegate() {
+            if ((r.af.f & FLAG_ZERO) != 0) {
+                ret();
+                return ubyte(20);
+            }
+            return ubyte(8);
+        };
+
+        // RET
+        isaTable[0xc9] = delegate() {
+            ret();
+            return ubyte(16);
+        };
+
+        // JP Z,a16
+        isaTable[0xca] = delegate() {
+            ushort addr = read16(r.pc);
+            r.pc += 2;
+
+            if ((r.af.f & FLAG_ZERO) != 0) {
+                jp(addr);
+                return ubyte(16);
+            }
+            return ubyte(12);
+        };
+
+        // PREFIX CB
+        isaTable[0xcb] = delegate() {
+            ubyte opcode = read8(r.pc++);
+            return cast(ubyte) (4 + cbeTable[opcode]());
+        };
+
+        // CALL Z,a16
+        isaTable[0xcc] = delegate() {
+            ushort addr = read16(r.pc);
+            r.pc += 2;
+
+            if ((r.af.f & FLAG_ZERO) != 0) {
+                call(addr);
+                return ubyte(16);
+            }
+            return ubyte(12);
+        };
+
+        // CALL a16
+        isaTable[0xcd] = delegate() {
+            ushort addr = read16(r.pc);
+            r.pc += 2;
+            call(addr);
+            return ubyte(24);
+        };
+
+        // ADC A,d8
+        isaTable[0xce] = delegate() {
+            ubyte v = read8(r.pc++);
+            adc8(r.af.a, v, r.af.f);
+            return ubyte(8);
+        };
+
+        // RST 08H
+        isaTable[0xcf] = delegate() {
+            rst(0x08);
+            return ubyte(16);
+        };
+
+        // RET NC
+        isaTable[0xd0] = delegate() {
+            if ((r.af.f & FLAG_CARRY) == 0) {
+                ret();
+                return ubyte(20);
+            }
+            return ubyte(8);
+        };
+
+        // POP DE
+        isaTable[0xd1] = delegate() {
+            pop(r.de.v);
+            return ubyte(12);
+        };
+
+        // JP NC,a16
+        isaTable[0xd2] = delegate() {
+            ushort addr = read16(r.pc);
+            r.pc += 2;
+
+            if ((r.af.f & FLAG_CARRY) == 0) {
+                jp(addr);
+                return ubyte(16);
+            }
+            return ubyte(12);
+        };
+
+        isaTable[0xd3] = delegate() {
+            throw new Exception("No instruction associated with OPCODE D3");
+        };
+
+        // CALL NC,a16
+        isaTable[0xd4] = delegate() {
+            ushort addr = read16(r.pc);
+            r.pc += 2;
+
+            if ((r.af.f & FLAG_CARRY) == 0) {
+                call(addr);
+                return ubyte(16);
+            }
+            return ubyte(12);
+        };
+
+        // PUSH DE
+        isaTable[0xd5] = delegate() {
+            push(r.de.v);
+            return ubyte(16);
+        };
+
+        // SUB d8
+        isaTable[0xd6] = delegate() {
+            ubyte v = read8(r.pc++);
+            sub8(r.af.a, v, r.af.f);
+            return ubyte(8);
+        };
+
+        // RST 10H
+        isaTable[0xd7] = delegate() {
+            rst(0x10);
+            return ubyte(16);
+        };
+
+        // RET C
+        isaTable[0xd8] = delegate() {
+            if ((r.af.f & FLAG_CARRY) != 0) {
+                ret();
+                return ubyte(20);
+            }
+            return ubyte(8);
+        };
+
+        // RETI
+        isaTable[0xd9] = delegate() {
+            ret();
+            ime = true;
+            return ubyte(16);
+        };
+
+        // JP C,a16
+        isaTable[0xda] = delegate() {
+            ushort addr = read16(r.pc);
+            r.pc += 2;
+
+            if ((r.af.f & FLAG_CARRY) != 0) {
+                jp(addr);
+                return ubyte(16);
+            }
+            return ubyte(12);
+        };
+
+        isaTable[0xdb] = delegate() {
+            throw new Exception("No instruction associated with OPCODE DB");
+        };
+
+        // CALL C,a16
+        isaTable[0xdc] = delegate() {
+            ushort addr = read16(r.pc);
+            r.pc += 2;
+
+            if ((r.af.f & FLAG_CARRY) != 0) {
+                call(addr);
+                return ubyte(16);
+            }
+            return ubyte(12);
+        };
+
+        isaTable[0xdd] = delegate() {
+            throw new Exception("No instruction associated with OPCODE DD");
+        };
+
+        // SBC A,d8
+        isaTable[0xde] = delegate() {
+            ubyte v = read8(r.pc++);
+            sbc8(r.af.a, v, r.af.f);
+            return ubyte(8);
+        };
+
+        // RST 18H
+        isaTable[0xdf] = delegate() {
+            rst(0x18);
+            return ubyte(16);
+        };
+
+        // LDH (a8),A
+        isaTable[0xe0] = delegate() {
+            ubyte offset = read8(r.pc++);
+            write8(0xff00 + offset, r.af.a);
+            return ubyte(12);
+        };
+
+        // POP HL
+        isaTable[0xe1] = delegate() {
+            pop(r.hl.v);
+            return ubyte(12);
+        };
+
+        // LD (C),A
+        isaTable[0xe2] = delegate() {
+            write8(0xff00 + r.bc.c, r.af.f);
+            return ubyte(8);
+        };
+
+        isaTable[0xe3] = delegate() {
+            throw new Exception("No instruction associated with OPCODE E3");
+        };
+
+        isaTable[0xe4] = delegate() {
+            throw new Exception("No instruction associated with OPCODE E4");
+        };
+
+        // PUSH HL
+        isaTable[0xe5] = delegate() {
+            push(r.hl.v);
+            return ubyte(16);
+        };
+
+        // AND d8
+        isaTable[0xe6] = delegate() {
+            ubyte v = read8(r.pc++);
+            and8(r.af.a, v, r.af.f);
+            return ubyte(8);
+        };
+
+        // RST 20H
+        isaTable[0xe7] = delegate() {
+            rst(0x20);
+            return ubyte(16);
+        };
+
+        // ADD SP,r8
+        isaTable[0xe8] = delegate() {
+            byte offset = read8(r.pc++);
+            r.sp += offset;
+            return ubyte(16);
+        };
+
+        // JP (HL)
+        isaTable[0xe9] = delegate() {
+            jp(r.hl.v);
+            return ubyte(4);
+        };
+
+        // LD (a16),A
+        isaTable[0xea] = delegate() {
+            ushort addr = read16(r.pc);
+            r.pc += 2;
+            write8(addr, r.af.a);
+            return ubyte(16);
+        };
+
+        isaTable[0xeb] = delegate() {
+            throw new Exception("No instruction associated with OPCODE EB");
+        };
+
+        isaTable[0xec] = delegate() {
+            throw new Exception("No instruction associated with OPCODE EC");
+        };
+
+        isaTable[0xed] = delegate() {
+            throw new Exception("No instruction associated with OPCODE ED");
+        };
+
+        // XOR d8
+        isaTable[0xee] = delegate() {
+            ubyte v = read8(r.pc++);
+            xor8(r.af.a, v, r.af.f);
+            return ubyte(8);
+        };
+
+        // RST 28H
+        isaTable[0xef] = delegate() {
+            rst(0x28);
+            return ubyte(16);
+        };
+
+        // LDH A,(a8)
+        isaTable[0xf0] = delegate() {
+            ubyte offset = read8(r.pc++);
+            r.af.a = read8(0xff00 + offset);
+            return ubyte(12);
+        };
+
+        // POP AF
+        isaTable[0xf1] = delegate() {
+            pop(r.af.v);
+            return ubyte(12);
+        };
+
+        // LD A,(C)
+        isaTable[0xf2] = delegate() {
+            r.af.a = read8(0xff00 + r.bc.c);
+            return ubyte(8);
+        };
+
+        // DI
+        isaTable[0xf3] = delegate() {
+            diRequested = true;
+            return ubyte(4);
+        };
+
+        isaTable[0xf4] = delegate() {
+            throw new Exception("No instruction associated with OPCODE F4");
+        };
+
+        // PUSH AF
+        isaTable[0xf5] = delegate() {
+            push(r.af.v);
+            return ubyte(16);
+        };
+
+        // OR d8
+        isaTable[0xf6] = delegate() {
+            ubyte v = read8(r.pc++);
+            or8(r.af.a, v, r.af.f);
+            return ubyte(8);
+        };
+
+        // RST 30H
+        isaTable[0xf7] = delegate() {
+            rst(0x30);
+            return ubyte(16);
+        };
+
+        // LD HL,SP+r8
+        isaTable[0xf8] = delegate() {
+            byte offset = read8(r.pc++);
+            r.hl.v = cast(ushort) (r.sp + offset);
+            return ubyte(12);
+        };
+
+        //LD SP,HL
+        isaTable[0xf9] = delegate() {
+            r.sp = r.hl.v;
+            return ubyte(8);
+        };
+
+        // LD A,(a16)
+        isaTable[0xfa] = delegate() {
+            r.af.a = read8(r.pc++);
+            return ubyte(16);
+        };
+
+        // EI
+        isaTable[0xeb] = delegate() {
+            eiRequested = true;
+            return ubyte(4);
+        };
+
+        isaTable[0xec] = delegate() {
+            throw new Exception("No instruction associated with OPCODE EC");
+        };
+
+        isaTable[0xed] = delegate() {
+            throw new Exception("No instruction associated with OPCODE ED");
+        };
+
+        // CP d8
+        isaTable[0xee] = delegate() {
+            ubyte v = read8(r.pc++);
+            cp8(r.af.a, v, r.af.f);
+            return ubyte(8);
+        };
+
+        // RST 38H
+        isaTable[0xef] = delegate() {
+            rst(0x38);
+            return ubyte(16);
         };
     }
 
@@ -963,6 +1825,51 @@ class Cpu
         cpu.isaTable[0x1f](); // rra
         assert(cpu.r.af.a == 0);
         assert(cpu.r.af.f == FLAG_CARRY);
+    }
+
+    // call routine
+    private void call(ushort addr) {
+        push(r.pc);
+        ubyte lsb = read8(addr++);
+        ubyte msb = read8(addr);
+        addr = (msb << 8) + lsb;
+        jp(addr);
+    }
+
+    // ret routine
+    private void ret() {
+        r.sp -= 2;
+        jp(read16(r.sp));
+    }
+
+    // rst routine
+    private void rst(ubyte routine) {
+        push(r.pc);
+        jp(routine);
+    }
+
+    // pop routine
+    private void pop(ref ushort reg) {
+        reg = read16(r.sp);
+        r.sp += 2;
+    }
+
+    // push routine
+    private void push(ushort reg) {
+        r.sp -= 2;
+        write16(r.sp, reg);
+    }
+
+    // jump relative
+    private void jr(byte offset)
+    {
+        r.pc += offset;
+    }
+
+    // jump absolute
+    private void jp(ushort address)
+    {
+        r.pc = address;
     }
 
     // auxiliary functions
@@ -1812,20 +2719,4 @@ class Cpu
         assert(r == 0b01010101);
     }
 
-    // jump relative
-    private static pure void jr8(ref ushort pc, byte offset)
-    {
-        pc += offset;
-    }
-
-    unittest
-    {
-        ushort pc = 1000;
-        jr8(pc, 10);
-        assert(pc == 1010);
-
-        pc = 2000;
-        jr8(pc, -20);
-        assert(pc == 1980);
-    }
 }
