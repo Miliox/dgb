@@ -69,7 +69,30 @@ static struct Registers
 
 class Cpu
 {
+    // cpu flags
+    private static immutable ubyte FLAG_ZERO  = 1 << 7; // zero flag
+    private static immutable ubyte FLAG_NEG   = 1 << 6; // add-sub flag (bcd)
+    private static immutable ubyte FLAG_HALF  = 1 << 5; // half carry flag (bcd)
+    private static immutable ubyte FLAG_CARRY = 1 << 4; // carry flag
+
+    // interruption flags
+    private static immutable ubyte IFLAG_VBLANK = 1 << 0; // V Blank
+    private static immutable ubyte IFLAG_LCDC   = 1 << 1; // LCDC Status
+    private static immutable ubyte IFLAG_TIMER  = 1 << 2; // Timer Overflow
+    private static immutable ubyte IFLAG_SERIAL = 1 << 3; // Serial I/O transfer complete
+    private static immutable ubyte IFLAG_P10P13 = 1 << 4; // Transition high to low of pin #10-#13
+
+    // internal registers
     private Registers r;
+
+    // interface to sytem memory
+    private Memory memory;
+
+    // stopped until button pressed
+    private bool stopped = false;
+
+    // power down cpu until interruption
+    private bool halted  = false;
 
     // interrupt master enable flag
     private bool ime = false;
@@ -80,19 +103,8 @@ class Cpu
     // enable interrupt requested by EI (must enable ime after execute next instruction)
     private bool eiRequested = false;
 
-    private bool stopped = false;
-    private bool halted  = false;
-
-    Memory memory;
-
-    // flags
-    private static immutable ubyte FLAG_ZERO  = 1 << 7; // zero flag
-    private static immutable ubyte FLAG_NEG   = 1 << 6; // add-sub flag (bcd)
-    private static immutable ubyte FLAG_HALF  = 1 << 5; // half carry flag (bcd)
-    private static immutable ubyte FLAG_CARRY = 1 << 4; // carry flag
-
     // instruction set architecture
-    private ubyte delegate()[256] isaTable; // Instruction Set Architecture
+    private ubyte delegate()[256] isaTable; // Instruction Set
     private ubyte delegate()[256] cbeTable; // CB Extensions Set
 
     this()
@@ -102,6 +114,11 @@ class Cpu
         fillCbe();
 
         memory = new NoMemory();
+    }
+
+    void setMemory(Memory memory)
+    {
+        this.memory = memory;
     }
 
     ubyte step()
