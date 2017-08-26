@@ -684,4 +684,403 @@ class Cpu
         assert(reg == 0);
         assert(flags == FLAG_ZERO);
     }
+
+    private static pure void daa8(ref ubyte r, ref ubyte f)
+    {
+        bool carry = (f & FLAG_CARRY) != 0;
+        bool half  = (f & FLAG_HALF) != 0;
+        bool neg   = (f & FLAG_NEG) != 0;
+
+        bool setCarry = false;
+
+        ubyte hn = (r >> 4) & 0xf; // higher nibble
+        ubyte ln = r & 0xf;        // lower nibble
+
+        if (!neg) // additive operation
+        {
+            /*
+            --------------------------------------------------------------------------------
+            |           | C Flag  | HEX value in | H Flag | HEX value in | Number  | C flag|
+            | Operation | Before  | upper digit  | Before | lower digit  | added   | After |
+            |           | DAA     | (bit 7-4)    | DAA    | (bit 3-0)    | to byte | DAA   |
+            |------------------------------------------------------------------------------|
+            |           |    0    |     0-9      |   0    |     0-9      |   00    |   0   | row 1
+            |   ADD     |    0    |     0-8      |   0    |     A-F      |   06    |   0   | row 2
+            |           |    0    |     0-9      |   1    |     0-3      |   06    |   0   | row 3
+            |   ADC     |    0    |     A-F      |   0    |     0-9      |   60    |   1   | row 4
+            |           |    0    |     9-F      |   0    |     A-F      |   66    |   1   | row 5
+            |   INC     |    0    |     A-F      |   1    |     0-3      |   66    |   1   | row 6
+            |           |    1    |     0-2      |   0    |     0-9      |   60    |   1   | row 7
+            |           |    1    |     0-2      |   0    |     A-F      |   66    |   1   | row 8
+            |           |    1    |     0-3      |   1    |     0-3      |   66    |   1   | row 9
+            |------------------------------------------------------------------------------|
+            */
+
+            if (!carry && hn <= 9 && !half && ln <= 9) // row 1
+            {
+                // bcd value, no need to adjust
+            }
+            else if (!carry && hn < 9 && !half && ln > 9) // row 2
+            {
+                r += 0x06;
+            }
+            else if (!carry && hn <= 9 && half && ln <= 3) // row 3
+            {
+                r += 0x06;
+            }
+            else if (!carry && hn > 9 && !half && ln <= 9) // row 4
+            {
+                r += 0x60;
+                setCarry = true;
+            }
+            else if (!carry && hn >= 9 && !half && ln > 9) // row 5
+            {
+                r += 0x66;
+                setCarry = true;
+            }
+            else if (!carry && hn >= 9 && half && ln <= 3) // row 6
+            {
+                r += 0x66;
+                setCarry = true;
+            }
+            else if (carry && hn <= 2 && !half && ln <= 9) // row 7
+            {
+                r += 0x60;
+                setCarry = true;
+            }
+            else if (carry && hn <= 2 && !half && ln > 9) // row 8
+            {
+                r += 0x66;
+                setCarry = true;
+            }
+            else if (carry && hn <= 3 && half && ln <= 3) // row 9
+            {
+                r += 0x66;
+                setCarry = true;
+            }
+            else
+            {
+                // ???
+            }
+        }
+        else // subtractive operations
+        {
+            /*
+            --------------------------------------------------------------------------------
+            |           | C Flag  | HEX value in | H Flag | HEX value in | Number  | C flag|
+            | Operation | Before  | upper digit  | Before | lower digit  | added   | After |
+            |           | DAA     | (bit 7-4)    | DAA    | (bit 3-0)    | to byte | DAA   |
+            |------------------------------------------------------------------------------|
+            |   SUB     |    0    |     0-9      |   0    |     0-9      |   00    |   0   | row 1
+            |   SBC     |    0    |     0-8      |   1    |     6-F      |   FA    |   0   | row 2
+            |   DEC     |    1    |     7-F      |   0    |     0-9      |   A0    |   1   | row 3
+            |   NEG     |    1    |     6-F      |   1    |     6-F      |   9A    |   1   | row 4
+            |------------------------------------------------------------------------------|
+            */
+
+            if (!carry && hn <= 9 && !half && ln <= 9) // row 1
+            {
+                // bcd value, no need to adjust
+            }
+            else if (!carry && hn <= 8 && half && ln >= 6) // row 2
+            {
+                r += 0xfa;
+            }
+            else if (carry && hn >= 7 && !half && ln <= 9) // row 3
+            {
+                r += 0xa0;
+                setCarry = true;
+            }
+            else if (carry && hn >= 6 && half && ln >= 6) // row 4
+            {
+                r += 0x9a;
+                setCarry = true;
+            }
+            else
+            {
+                // ???
+            }
+        }
+
+        setFlag(f, FLAG_ZERO,  r == 0);
+        setFlag(f, FLAG_HALF,  false);
+        setFlag(f, FLAG_CARRY, setCarry);
+    }
+
+    unittest
+    {
+        ubyte a = 0x79;
+        ubyte b = 0x35;
+        ubyte f = 0;
+        add8(a, b, f);
+        daa8(a, f);
+        assert(a == 0x14);
+        assert(f == (FLAG_CARRY));
+    }
+
+    // complement of 8 bit register
+    private static pure void cpl8(ref ubyte r, ref ubyte f)
+    {
+        r = ~r;
+        setFlag(f, FLAG_NEG | FLAG_HALF, true);
+    }
+
+    unittest
+    {
+        ubyte reg = 0x00;
+        ubyte flags = FLAG_ZERO | FLAG_CARRY;
+        cpl8(reg, flags);
+        assert(reg == 0xff);
+        assert(flags == (FLAG_ZERO | FLAG_NEG | FLAG_HALF | FLAG_CARRY ));
+    }
+
+    // complement carry flag
+    private static pure void ccf(ref ubyte f)
+    {
+        setFlag(f, FLAG_NEG | FLAG_HALF, false);
+        setFlag(f, FLAG_CARRY, (f & FLAG_CARRY) == 0);
+    }
+
+    unittest
+    {
+        // test reset carry
+        ubyte f = FLAG_CARRY;
+        ccf(f);
+        assert(f == 0);
+
+        // test set carry and keep zero
+        f = FLAG_ZERO | FLAG_NEG | FLAG_HALF;
+        ccf(f);
+        assert(f == (FLAG_ZERO | FLAG_CARRY));
+    }
+
+    // set carry flag
+    private static pure void scf(ref ubyte f)
+    {
+        setFlag(f, FLAG_NEG | FLAG_HALF, false);
+        setFlag(f, FLAG_CARRY, true);
+    }
+
+    unittest
+    {
+        // test set carry
+        ubyte f = 0;
+        scf(f);
+        assert(f == FLAG_CARRY);
+
+        // test keep zero, reset neg and half, set carry
+        f = FLAG_ZERO | FLAG_NEG | FLAG_HALF | FLAG_CARRY;
+        scf(f);
+        assert(f == (FLAG_ZERO | FLAG_CARRY));
+    }
+
+    // rotate left, old 7th bit on carry
+    private static pure void rlc8(ref ubyte r, ref ubyte f)
+    {
+        bool carry = (r & 0x80) != 0;
+        r = rol(r , 1);
+
+        setFlag(f, FLAG_ZERO, r == 0); // must be reset on RLCA, use as is in CB ext.
+        setFlag(f, FLAG_NEG | FLAG_HALF, false);
+        setFlag(f, FLAG_CARRY, carry);
+    }
+
+    unittest
+    {
+        ubyte acc = 0x80;
+        ubyte flags  = 0;
+        rlc8(acc, flags);
+        assert(acc == 1);
+        assert(flags == FLAG_CARRY);
+    }
+
+    // rotate left through carry
+    private static pure void rl8(ref ubyte r, ref ubyte f)
+    {
+        bool carry = (r & 0x80) != 0;
+        r <<= 1;
+
+        // add carry to register
+        if ((f & FLAG_CARRY) != 0)
+        {
+            r += 1;
+        }
+
+        setFlag(f, FLAG_ZERO, r == 0); // must be reset on RLA, use as is in CB ext.
+        setFlag(f, FLAG_NEG | FLAG_HALF, false);
+        setFlag(f, FLAG_CARRY, carry);
+    }
+
+    unittest
+    {
+        ubyte acc = 0x80;
+        ubyte flags  = 0;
+        rl8(acc, flags);
+        assert(acc == 0);
+        assert(flags == (FLAG_CARRY | FLAG_ZERO));
+    }
+
+    // rotate right, old bit 0 on carry
+    private static pure void rrc8(ref ubyte r, ref ubyte f)
+    {
+        bool carry = (r & 0x01) != 0;
+        r = ror(r , 1);
+
+        setFlag(f, FLAG_ZERO, r == 0); // must be reset on RLCA, use as is in CB ext.
+        setFlag(f, FLAG_NEG | FLAG_HALF, false);
+        setFlag(f, FLAG_CARRY, carry);
+    }
+
+    unittest
+    {
+        ubyte acc = 0x01;
+        ubyte flags  = 0;
+        rrc8(acc, flags);
+        assert(acc == 0x80);
+        assert(flags == FLAG_CARRY);
+    }
+
+    // rotate right through carry
+    private static pure void rr8(ref ubyte r, ref ubyte f)
+    {
+        bool carry = (r & 0x01) != 0;
+        r >>= 1;
+
+        // add carry to register
+        if ((f & FLAG_CARRY) != 0)
+        {
+            r += 0x80;
+        }
+
+        setFlag(f, FLAG_ZERO, r == 0); // must be reset on RLCA, use as is in CB ext.
+        setFlag(f, FLAG_NEG | FLAG_HALF, false);
+        setFlag(f, FLAG_CARRY, carry);
+    }
+
+    unittest
+    {
+        ubyte acc = 0x01;
+        ubyte flags  = 0;
+        rr8(acc, flags);
+        assert(acc == 0);
+        assert(flags == (FLAG_CARRY | FLAG_ZERO));
+    }
+
+    // shift n left into carry
+    private static pure void sla8(ref ubyte acc, ref ubyte reg, ref ubyte f)
+    {
+        bool carry = (acc & 0x80) != 0;
+        acc <<= reg;
+
+        setFlag(f, FLAG_ZERO, acc == 0);
+        setFlag(f, FLAG_NEG | FLAG_HALF, false);
+        setFlag(f, FLAG_CARRY, carry);
+    }
+
+    unittest
+    {
+        ubyte acc = 0x8F;
+        ubyte reg = 4;
+        ubyte flags  = 0;
+        sla8(acc, reg, flags);
+        assert(acc == 0xf0);
+        assert(flags == FLAG_CARRY);
+    }
+
+    // shift n right into carry, msb don't change
+    private static pure void sra8(ref ubyte acc, ubyte reg, ref ubyte f)
+    {
+        bool carry = (acc & 0x01) != 0;
+        acc = (acc & 0x80) | (acc >> reg);
+
+        setFlag(f, FLAG_ZERO, acc == 0);
+        setFlag(f, FLAG_NEG | FLAG_HALF, false);
+        setFlag(f, FLAG_CARRY, carry);
+    }
+
+    unittest
+    {
+        ubyte acc = 0x81;
+        ubyte reg = 4;
+        ubyte flags  = 0;
+        sra8(acc, reg, flags);
+        assert(acc == 0x88);
+        assert(flags == FLAG_CARRY);
+    }
+
+    // shift n right into carry, msb set to 0
+    private static pure void srl8(ref ubyte acc, ubyte reg, ref ubyte f)
+    {
+        bool carry = (acc & 0x01) != 0;
+        acc = (acc >> reg) & 0x7f;
+
+        setFlag(f, FLAG_ZERO, acc == 0);
+        setFlag(f, FLAG_NEG | FLAG_HALF, false);
+        setFlag(f, FLAG_CARRY, carry);
+    }
+
+    unittest
+    {
+        ubyte acc = 0x81;
+        ubyte reg = 4;
+        ubyte flags  = 0;
+        srl8(acc, reg, flags);
+        assert(acc == 0x08);
+        assert(flags == FLAG_CARRY);
+    }
+
+    // test bit of register
+    private static pure void testBit8(ubyte r, ubyte i, ref ubyte f)
+    {
+        ubyte mask = (1 << i) & 0xff;
+        bool isSet = (r & mask) != 0;
+
+        setFlag(f, FLAG_ZERO, !isSet); // Set if bit b of register r is 0
+        setFlag(f, FLAG_NEG, false);
+        setFlag(f, FLAG_HALF, true);
+    }
+
+    unittest
+    {
+        ubyte r = 0x80;
+        ubyte f = 0;
+        testBit8(r, 0, f);
+        assert(f == (FLAG_ZERO | FLAG_HALF));
+
+        f = 0;
+        testBit8(r, 7, f);
+        assert(f == FLAG_HALF);
+    }
+
+    // set a bit
+    private static pure void setBit8(ref ubyte r, ubyte i)
+    {
+        r |= (1 << i) & 0xff;
+    }
+
+    unittest
+    {
+        ubyte r = 0x0;
+        setBit8(r, 1);
+        setBit8(r, 3);
+        setBit8(r, 5);
+        setBit8(r, 7);
+        assert(r == 0b10101010);
+    }
+
+    // reset bit
+    private static pure void resetBit8(ref ubyte r, ubyte i)
+    {
+        r &= ~((1 << i) & 0xff);
+    }
+
+    unittest
+    {
+        ubyte r = 0xff;
+        resetBit8(r, 1);
+        resetBit8(r, 3);
+        resetBit8(r, 5);
+        resetBit8(r, 7);
+        assert(r == 0b01010101);
+    }
 }
