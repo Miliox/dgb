@@ -112,6 +112,9 @@ class Cpu
         // decode
         auto f = isaTable[opcode];
 
+        // toggle interruption state
+        setIME();
+
         // execute
         auto ticks = f();
 
@@ -126,6 +129,18 @@ class Cpu
         r.hl.v = 0;
         r.sp = 0;
         r.pc = 0;
+    }
+
+    void setIME() {
+        if (diRequested) {
+            ime = false;
+            diRequested = false;
+        }
+
+        if (eiRequested) {
+            ime = false;
+            eiRequested = false;
+        }
     }
 
     // Helpers
