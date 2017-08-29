@@ -58,6 +58,9 @@ void main(string[] args)
     mmu.rom(rom);
 
     cpu.memory(mmu);
+    timer.onInterrupt = {
+        cpu.timerInt();
+    };
 
     Debugger debugger = new Debugger();
     debugger.cpu = cpu;
@@ -68,6 +71,7 @@ void main(string[] args)
         debugger.dumpI();
         getchar();
 
-        cpu.step();
+        ubyte cycles = cpu.step();
+        timer.addTicks(cycles);
     }
 }
