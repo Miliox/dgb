@@ -64,11 +64,12 @@ class Timer {
             m_dividerFraction %= DIVIDER_RATIO;
         }
 
-        if ((m_control & TAC_START) != 0)
+        bool running = (m_control & TAC_START) != 0;
+        if (running)
         {
-            short period = TIMER_RATIO[m_control & TAC_RATIO];
+            short fraction = TIMER_RATIO[m_control & TAC_RATIO];
 
-            short rem = cast(short)(period - m_counterFraction);
+            short rem = cast(short)(fraction - m_counterFraction);
             if (rem > elapsed)
             {
                 m_counterFraction += elapsed;

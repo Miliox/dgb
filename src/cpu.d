@@ -67,6 +67,15 @@ static struct Registers
     }
 }
 
+// Interrupt flag state indicated
+enum IFLAG : ubyte {
+    VBLANK = 1 << 0, // V Blank
+    LCDC   = 1 << 1, // LCDC Status
+    TIMER  = 1 << 2, // Timer Overflow
+    SERIAL = 1 << 3, // Serial I/O transfer complete
+    P10P13 = 1 << 4 // Transition high to low of pin #10-#13
+}
+
 class Cpu
 {
     private static immutable ushort IOADDR = 0xff00;
@@ -81,20 +90,17 @@ class Cpu
         ZERO  = 1 << 7 // zero flag
     }
 
-    // Interrupt flag state indicated
-    enum IFLAG : ubyte {
-        VBLANK = 1 << 0, // V Blank
-        LCDC   = 1 << 1, // LCDC Status
-        TIMER  = 1 << 2, // Timer Overflow
-        SERIAL = 1 << 3, // Serial I/O transfer complete
-        P10P13 = 1 << 4 // Transition high to low of pin #10-#13
-    }
-
     // internal registers
     private Registers m_regs;
 
     // interface to sytem memory
     private Memory m_mem;
+
+    // interrupt flag
+    private ubyte m_if;
+
+    // interrupt enable
+    private ubyte m_ie;
 
     // stopped until button pressed
     private bool m_hasStoped = false;
@@ -148,6 +154,24 @@ class Cpu
         return m_ime;
     }
 
+    @property ubyte interruptEnable() {
+        return m_ie;
+    }
+
+    @property ubyte interruptEnable(ubyte ie) {
+        return m_ie = ie;
+    }
+
+    @property ubyte interruptFlag() {
+        return m_if;
+    }
+
+    @property ubyte interruptFlag(ubyte iflag) {
+        return m_if = iflag;
+    }
+
+    @property
+
     ubyte step()
     {
         // fetch
@@ -193,37 +217,34 @@ class Cpu
     {
         if (m_ime)
         {
-            ubyte ifFlags = m_mem.read8(IFADDR);
-            ubyte ieFlags = m_mem.read8(IEADDR);
-
-            if ((ieFlags & ifFlags & IFLAG.VBLANK) != 0)
+            if ((m_ie & m_if & IFLAG.VBLANK) != 0)
             {
                 m_ime = false;
-                setFlag(ifFlags, IFLAG.VBLANK, false);
+                setFlag(m_if, IFLAG.VBLANK, false);
                 rst(0x40);
             }
-            else if ((ieFlags & ifFlags & IFLAG.LCDC) != 0)
+            else if ((m_ie & m_if & IFLAG.LCDC) != 0)
             {
                 m_ime = false;
-                setFlag(ifFlags, IFLAG.LCDC, false);
+                setFlag(m_if, IFLAG.LCDC, false);
                 rst(0x48);
             }
-            else if ((ieFlags & ifFlags & IFLAG.TIMER) != 0)
+            else if ((m_ie & m_if & IFLAG.TIMER) != 0)
             {
                 m_ime = false;
-                setFlag(ifFlags, IFLAG.TIMER, false);
+                setFlag(m_if, IFLAG.TIMER, false);
                 rst(0x50);
             }
-            else if ((ieFlags & ifFlags & IFLAG.SERIAL) != 0)
+            else if ((m_ie & m_if & IFLAG.SERIAL) != 0)
             {
                 m_ime = false;
-                setFlag(ifFlags, IFLAG.SERIAL, false);
+                setFlag(m_if, IFLAG.SERIAL, false);
                 rst(0x58);
             }
-            else if ((ieFlags & ifFlags & IFLAG.P10P13) != 0)
+            else if ((m_ie & m_if & IFLAG.P10P13) != 0)
             {
                 m_ime = false;
-                setFlag(ifFlags, IFLAG.P10P13, false);
+                setFlag(m_if, IFLAG.P10P13, false);
                 rst(0x60);
             }
         }

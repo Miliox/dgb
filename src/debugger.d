@@ -142,9 +142,9 @@ class Debugger
             argv += m_cpu.memory.read8(addr);
         }
 
+        writef("%04x: ", pc);
         if (opcode != 0xcb)
         {
-            writef("%04x: ", pc);
             writef(opcode_fmt[opcode], argv);
         }
         else
