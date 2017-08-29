@@ -111,6 +111,12 @@ class Mmu : Memory {
             case 0xff0f:
                 m_cpu.interruptEnable(value);
                 break;
+            case 0xff50:
+                if (m_useBios)
+                {
+                    m_useBios = false;
+                }
+                break;
             case 0xffff:
                 m_cpu.interruptFlag(value);
                 break;
