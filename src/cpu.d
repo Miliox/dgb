@@ -213,6 +213,31 @@ class Cpu
         }
     }
 
+    void timerInt()
+    {
+        m_if |= IFLAG.TIMER;
+    }
+
+    void serialInt()
+    {
+        m_if |= IFLAG.SERIAL;
+    }
+
+    void lcdcInt()
+    {
+        m_if |= IFLAG.LCDC;
+    }
+
+    void vblankInt()
+    {
+        m_if |= IFLAG.VBLANK;
+    }
+
+    void p1013Int()
+    {
+        m_if |= IFLAG.P10P13;
+    }
+
     void handleInterrupt()
     {
         if (m_ime)
