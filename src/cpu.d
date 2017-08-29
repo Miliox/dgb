@@ -1886,28 +1886,28 @@ class Cpu
         };
 
         // EI
-        isaTable[0xeb] = delegate() {
+        isaTable[0xfb] = delegate() {
             m_eireq = true;
             return ubyte(4);
         };
 
-        isaTable[0xec] = delegate() {
+        isaTable[0xfc] = delegate() {
             throw new Exception("No instruction associated with OPCODE EC");
         };
 
-        isaTable[0xed] = delegate() {
+        isaTable[0xfd] = delegate() {
             throw new Exception("No instruction associated with OPCODE ED");
         };
 
         // CP d8
-        isaTable[0xee] = delegate() {
+        isaTable[0xfe] = delegate() {
             ubyte v = read8(m_regs.pc++);
             cp8(m_regs.af.a, v, m_regs.af.f);
             return ubyte(8);
         };
 
         // RST 38H
-        isaTable[0xef] = delegate() {
+        isaTable[0xff] = delegate() {
             rst(0x38);
             return ubyte(16);
         };
