@@ -29,6 +29,7 @@ immutable ubyte[256] bios = [
 class Mmu : Memory {
     private Cpu m_cpu;
     private Timer m_timer;
+    private Memory m_rom;
 
     private bool m_useBios = true;
 
@@ -55,11 +56,25 @@ class Mmu : Memory {
         return m_timer;
     }
 
+    @property Memory rom(Memory rom)
+    {
+        return m_rom = rom;
+    }
+
+    @property Memory rom()
+    {
+        return m_rom;
+    }
+
     ubyte read8(ushort address)
     {
         if (m_useBios && address < bios.length)
         {
             return bios[address];
+        }
+        else if (address < 0x8000)
+        {
+            return m_rom.read8(address);
         }
         else if (address >= 0xc000 && address < 0xe000)
         {
@@ -93,7 +108,33 @@ class Mmu : Memory {
         }
     }
 
-    void  write8(ushort address, ubyte value) {
+    void write8(ushort address, ubyte value) {
+        if (m_useBios && address < bios.length)
+        {
+            // read only
+            return;
+        }
+        else if (address < 0x8000)
+        {
+            m_rom.write8(address, value);
+            return;
+        }
+        else if (address >= 0xc000 && address < 0xe000)
+        {
+            lram[address - 0xc000] = value;
+            return;
+        }
+        else if (address >= 0xe000 && address < 0xfe00)
+        {
+            lram[address - 0xe000] = value;
+            return;
+        }
+        else if (address >= 0xff80 && address < 0xffff)
+        {
+            hram[address - 0xff80] = value;
+            return;
+        }
+
         switch (address)
         {
             case 0xff04:
