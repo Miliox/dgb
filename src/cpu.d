@@ -3557,16 +3557,14 @@ class Cpu
     // call routine
     private void call(ushort addr) {
         push(m_regs.pc);
-        ubyte lsb = read8(addr++);
-        ubyte msb = read8(addr);
-        addr = (msb << 8) + lsb;
         jp(addr);
     }
 
     // ret routine
     private void ret() {
-        m_regs.sp -= 2;
-        jp(read16(m_regs.sp));
+        ushort addr;
+        pop(addr);
+        jp(addr);
     }
 
     // rst routine
