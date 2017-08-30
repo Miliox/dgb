@@ -2,6 +2,7 @@ import std.stdio;
 import std.file;
 
 import cpu;
+import gpu;
 import timer;
 import mmu;
 
@@ -42,6 +43,7 @@ class Rom : Memory
 void main(string[] args)
 {
     Cpu cpu = new Cpu();
+    Gpu gpu = new Gpu();
     Rom rom = new Rom();
     Timer timer = new Timer();
 
@@ -54,12 +56,19 @@ void main(string[] args)
 
     Mmu mmu = new Mmu();
     mmu.cpu(cpu);
+    mmu.gpu(gpu);
     mmu.timer(timer);
     mmu.rom(rom);
 
     cpu.memory(mmu);
     timer.onInterrupt = {
         cpu.timerInt();
+    };
+    gpu.onVBlankInterrupt = {
+        cpu.vblankInt();
+    };
+    gpu.onLcdcStatInterrupt = {
+        cpu.lcdcInt();
     };
 
     Debugger debugger = new Debugger();
@@ -72,6 +81,7 @@ void main(string[] args)
         getchar();
 
         ubyte cycles = cpu.step();
+        gpu.addTicks(cycles);
         timer.addTicks(cycles);
     }
 }

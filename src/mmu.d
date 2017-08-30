@@ -1,5 +1,6 @@
 import memory;
 import cpu;
+import gpu;
 import timer;
 
 immutable ubyte[256] bios = [
@@ -28,6 +29,7 @@ immutable ubyte[256] bios = [
 
 class Mmu : Memory {
     private Cpu m_cpu;
+    private Gpu m_gpu;
     private Timer m_timer;
     private Memory m_rom;
 
@@ -43,8 +45,19 @@ class Mmu : Memory {
 
     @property Cpu cpu()
     {
-        return cpu;
+        return m_cpu;
     }
+
+    @property Gpu gpu(Gpu gpu)
+    {
+        return m_gpu = gpu;
+    }
+
+    @property Gpu gpu()
+    {
+        return m_gpu;
+    }
+
 
     @property Timer timer(Timer timer)
     {
@@ -76,6 +89,10 @@ class Mmu : Memory {
         {
             return m_rom.read8(address);
         }
+        else if (address < 0xa000)
+        {
+            return m_gpu.ram(cast(ushort)(address - 0x8000));
+        }
         else if (address >= 0xc000 && address < 0xe000)
         {
             return lram[address - 0xc000];
@@ -83,6 +100,10 @@ class Mmu : Memory {
         else if (address >= 0xe000 && address < 0xfe00)
         {
             return lram[address - 0xe000];
+        }
+        else if (address < 0xfea0)
+        {
+            return m_gpu.oam(cast(ushort) (address - 0xfe00));
         }
         else if (address >= 0xff80 && address < 0xffff)
         {
@@ -99,6 +120,28 @@ class Mmu : Memory {
                 return m_timer.tma();
             case 0xff08:
                 return m_timer.tac();
+            case 0xff40:
+                return m_gpu.lcdc();
+            case 0xff41:
+                return m_gpu.stat();
+            case 0xff42:
+                return m_gpu.scy();
+            case 0xff43:
+                return m_gpu.scx();
+            case 0xff44:
+                return m_gpu.ly();
+            case 0xff45:
+                return m_gpu.lyc();
+            case 0xff47:
+                return m_gpu.bgp();
+            case 0xff48:
+                return m_gpu.obp0();
+            case 0xff49:
+                return m_gpu.obp1();
+            case 0xff4a:
+                return m_gpu.wy();
+            case 0xff4b:
+                return m_gpu.wx();
             case 0xff0f:
                 return m_cpu.interruptEnable();
             case 0xffff:
@@ -119,6 +162,11 @@ class Mmu : Memory {
             m_rom.write8(address, value);
             return;
         }
+        else if (address < 0xa000)
+        {
+            m_gpu.ram(cast(ushort) (address - 0x8000), value);
+            return;
+        }
         else if (address >= 0xc000 && address < 0xe000)
         {
             lram[address - 0xc000] = value;
@@ -127,6 +175,11 @@ class Mmu : Memory {
         else if (address >= 0xe000 && address < 0xfe00)
         {
             lram[address - 0xe000] = value;
+            return;
+        }
+        else if (address < 0xfea0)
+        {
+            m_gpu.oam(cast (ushort) (address - 0xfe00), value);
             return;
         }
         else if (address >= 0xff80 && address < 0xffff)
@@ -151,6 +204,39 @@ class Mmu : Memory {
                 break;
             case 0xff0f:
                 m_cpu.interruptEnable(value);
+                break;
+            case 0xff40:
+                m_gpu.lcdc(value);
+                break;
+            case 0xff41:
+                m_gpu.stat(value);
+                break;
+            case 0xff42:
+                m_gpu.scy(value);
+                break;
+            case 0xff43:
+                m_gpu.scx(value);
+                break;
+            case 0xff44:
+                m_gpu.ly(value);
+                break;
+            case 0xff45:
+                m_gpu.lyc(value);
+                break;
+            case 0xff47:
+                m_gpu.bgp(value);
+                break;
+            case 0xff48:
+                m_gpu.obp0(value);
+                break;
+            case 0xff49:
+                m_gpu.obp1(value);
+                break;
+            case 0xff4a:
+                m_gpu.wy(value);
+                break;
+            case 0xff4b:
+                m_gpu.wx(value);
                 break;
             case 0xff50:
                 if (m_useBios)
