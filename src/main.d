@@ -74,11 +74,27 @@ void main(string[] args)
     Debugger debugger = new Debugger();
     debugger.cpu = cpu;
 
+    ushort breakpoint = 0x0100;
+    bool hit = false;
+
     for (;;) {
-        debugger.dumpR();
-        write(" ");
-        debugger.dumpI();
-        getchar();
+        if (hit || cpu.registers().pc == breakpoint)
+        {
+            hit = true;
+            debugger.dumpR();
+            write(" ");
+            debugger.dumpI();
+            getchar();
+            //writeln();
+            //stdout.flush();
+        }
+
+        if (cpu.registers().pc == 0x100)
+        {
+            // Stop execution for now
+            writeln("nintendo check: passed");
+            break;
+        }
 
         ubyte cycles = cpu.step();
         gpu.addTicks(cycles);
