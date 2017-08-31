@@ -1,0 +1,9 @@
+{
+	"name": "pocket",
+	"authors": [
+		"Emiliano Firmino"
+	],
+	"description": "D Gameboy Emulator",
+	"copyright": "Copyright © 2017, Emiliano Firmino",
+	"license": "MIT"
+}

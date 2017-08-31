@@ -1,8 +1,7 @@
 DCC    = dmd
 DFLAGS = -w
 LIBS   =
-SRC    = src
-TST    = tst
+SRC    = source
 OBJ    = obj
 OUT    = $(shell basename `pwd`)
 
