@@ -5,5 +5,12 @@
 	],
 	"description": "D Gameboy Emulator",
 	"copyright": "Copyright © 2017, Emiliano Firmino",
-	"license": "MIT"
+	"license": "MIT",
+    "dependencies": {
+        "derelict-sdl2": "~>3.0.0-beta"
+    },
+    "libs": [
+        "sdl2"
+    ],
+    "lflags-dmd": ["-L/usr/local/lib", "-L/usr/lib"]
 }
