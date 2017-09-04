@@ -1,9 +1,6 @@
-import frontend;
-import backend;
+import gui;
+import emulator;
 import std.stdio;
-
-import debugger;
-import memory;
 
 void main(string[] args)
 {
@@ -12,13 +9,13 @@ void main(string[] args)
         return;
     }
 
-    FrontEnd front = new FrontEnd(4);
-    BackEnd back = new BackEnd(args[1]);
-    back.onStop = {
-        front.stop();
+    Gui gui = new Gui(4);
+    Emulator emulator = new Emulator(args[1]);
+    emulator.onStop = {
+        gui.stop();
     };
-    back.start();
+    emulator.start();
 
-    front.run();
-    back.stop();
+    gui.run();
+    emulator.stop();
 }

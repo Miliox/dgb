@@ -41,7 +41,7 @@ class Rom : Memory
     }
 }
 
-class BackEnd : Thread
+class Emulator : Thread
 {
     shared bool running;
 

@@ -1,7 +1,7 @@
 import core.thread;
 import derelict.sdl2.sdl;
 
-class FrontEnd
+class Gui
 {
     private static immutable int defWidth = 160;
     private static immutable int defHeight = 144;
