@@ -43,7 +43,7 @@ dub test
 - [X] GPU Timing
 - [ ] GPU Background Render
 - [ ] GPU Sprite Render
-- [ ] Window & Media Library (SFML)
+- [X] Window & Media Library (SDL2)
 - [ ] Sound Controller
 - [ ] Keyboard Input
 - [ ] Serial Controller

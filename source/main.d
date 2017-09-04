@@ -1,103 +1,24 @@
+import frontend;
+import backend;
 import std.stdio;
-import std.file;
-
-import cpu;
-import gpu;
-import timer;
-import mmu;
 
 import debugger;
 import memory;
 
-class Rom : Memory
-{
-    private ubyte[] rom = new ubyte[0x8000];
-
-    bool load(string path) {
-        auto file = File(path, "r");
-        try {
-            file.rawRead(rom);
-        }
-        catch(FileException fe)
-        {
-            writefln("err: %s", fe.msg);
-            return false;
-        } finally
-        {
-            file.close();
-        }
-        return true;
-    }
-
-    ubyte read8(ushort address)
-    {
-        return rom[address & 0x7fff];
-    }
-
-    void write8(ushort address, ubyte data)
-    {
-        // read only
-    }
-}
-
 void main(string[] args)
 {
-    Cpu cpu = new Cpu();
-    Gpu gpu = new Gpu();
-    Rom rom = new Rom();
-    Timer timer = new Timer();
-
-    if (args.length >= 2) {
-        bool loaded = rom.load(args[1]);
-        writefln("%s load %s!", args[1], loaded ? "success" : "fail");
-    } else {
-        writeln("no cartridge provided");
+    if (args.length != 2) {
+        writeln("err: path to rom file not provided!");
+        return;
     }
 
-    Mmu mmu = new Mmu();
-    mmu.cpu(cpu);
-    mmu.gpu(gpu);
-    mmu.timer(timer);
-    mmu.rom(rom);
-
-    cpu.memory(mmu);
-    timer.onInterrupt = {
-        cpu.timerInt();
+    FrontEnd front = new FrontEnd(4);
+    BackEnd back = new BackEnd(args[1]);
+    back.onStop = {
+        front.stop();
     };
-    gpu.onVBlankInterrupt = {
-        cpu.vblankInt();
-    };
-    gpu.onLcdcStatInterrupt = {
-        cpu.lcdcInt();
-    };
+    back.start();
 
-    Debugger debugger = new Debugger();
-    debugger.cpu = cpu;
-
-    ushort breakpoint = 0x0100;
-    bool hit = false;
-
-    for (;;) {
-        if (hit || cpu.registers().pc == breakpoint)
-        {
-            hit = true;
-            debugger.dumpR();
-            write(" ");
-            debugger.dumpI();
-            getchar();
-            //writeln();
-            //stdout.flush();
-        }
-
-        if (cpu.registers().pc == 0x100)
-        {
-            // Stop execution for now
-            writeln("nintendo check: passed");
-            break;
-        }
-
-        ubyte cycles = cpu.step();
-        gpu.addTicks(cycles);
-        timer.addTicks(cycles);
-    }
+    front.run();
+    back.stop();
 }
