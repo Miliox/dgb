@@ -78,6 +78,9 @@ class Emulator : Thread
         gpu.onLcdcStatInterrupt = {
             cpu.lcdcInt();
         };
+        gpu.onFrameReady = (ref ubyte[][] frame) {
+            // TODO: Forward to GUI
+        };
     }
 
     private void run()

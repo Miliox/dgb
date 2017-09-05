@@ -1,4 +1,4 @@
-
+import bitmask;
 
 class Gpu
 {
@@ -16,11 +16,27 @@ class Gpu
     private ubyte m_objPaletteData0;
     private ubyte m_objPaletteData1;
 
-    private ubyte[] m_oam = new byte[0x2000];
-    private ubyte[] m_ram = new byte[0xa0];
+    private ubyte[] m_oam = new byte[0xa0];
+    private ubyte[] m_ram = new byte[0x2000];
+
+    private ubyte[][] m_frame = new byte[SCREEN_HEIGHT][SCREEN_WIDTH * SCREEN_PPB];
 
     void delegate() onVBlankInterrupt;
     void delegate() onLcdcStatInterrupt;
+    void delegate(ref ubyte[][] frame) onFrameReady;
+
+    private static immutable int SCREEN_WIDTH = 160;
+    private static immutable int SCREEN_HEIGHT = 144;
+    private static immutable int SCREEN_BPP = 2;               // bits per pixel
+    private static immutable int SCREEN_PPB = 8 / SCREEN_BPP;  // pixels per byte
+
+    private static immutable int TILE_SIZE = 16;
+    private static immutable int TILE_LINE_SIZE = 2;
+    private static immutable int TILE_HEIGHT = 8;
+    private static immutable int TILE_WIDTH = 8;
+
+    private static immutable int TILES_PER_LINE = 32;
+    private static immutable int TILES_PER_COLUMN = 32;
 
     private enum Lcdc : ubyte
     {
@@ -196,6 +212,22 @@ class Gpu
         }
     }
 
+    @property private ushort bgTileMapPosition() {
+        return (bitmask.check(m_lcdc, Lcdc.BG_TILE_SELECT) ? 0x9C00 : 0x9800) - 0x8000;
+    }
+
+    @property private ushort bgTileDataPosition() {
+        return (bitmask.check(m_lcdc, Lcdc.BG_DATA_SELECT) ? 0x8000 : 0x9000) - 0x8000;
+    }
+
+    @property private bool bgSignedOffset() {
+        return !bitmask.check(m_lcdc, Lcdc.BG_DATA_SELECT);
+    }
+
+    @property private bool bgVisible() {
+        return bitmask.check(m_lcdc, Lcdc.BG_DISPLAY);
+    }
+
     private void setMode(Mode mode)
     {
         m_stat = (m_stat & ~Stat.MODE_FLAG) | (mode & Stat.MODE_FLAG);
@@ -225,6 +257,52 @@ class Gpu
         }
     }
 
+    private void renderScanline() {
+        if (m_currentY >= SCREEN_HEIGHT) {
+            // out-of-bound
+            return;
+        }
+
+        immutable ushort dataPos = bgTileDataPosition();
+        immutable ushort mapPos  = bgTileMapPosition();
+
+        int y = (m_scrollY + m_currentY) % 256;
+        for (int x = 0; x < SCREEN_WIDTH; x++)
+        {
+            int bgIndex = (x / TILE_WIDTH) + ((y / TILE_HEIGHT) * TILES_PER_LINE);
+
+            ubyte tileNumber = m_ram[mapPos + bgIndex];
+
+            int tileDataPos = dataPos + (y % TILE_HEIGHT) * TILE_LINE_SIZE;
+            if (bgSignedOffset())
+            {
+                tileDataPos += cast(byte) tileNumber;
+            }
+            else
+            {
+                tileDataPos += tileNumber;
+            }
+
+            ubyte tileLsb = m_ram[tileDataPos];
+            ubyte tileHsb = m_ram[tileDataPos + 1];
+
+            ubyte bitIndex = 7 - (x % 8);
+
+            int pixel = (tileLsb >> bitIndex) & 1;
+            pixel *= 2;
+            pixel += (tileHsb >> bitIndex) & 1;
+
+            ubyte pixelGroupPos = cast(ubyte) (x / SCREEN_PPB);
+            ubyte pixelIndex = cast(ubyte) (x % SCREEN_PPB);
+
+            ubyte pixelGroup = m_frame[m_currentY][pixelGroupPos];
+            pixelGroup &= 0x3 << (SCREEN_BPP * pixelIndex);
+            pixelGroup |= pixel << (SCREEN_BPP * pixelIndex);
+
+            m_frame[m_currentY][pixelGroupPos] = pixelGroup;
+        }
+    }
+
     void addTicks(ubyte elapsed)
     {
         m_counter += elapsed;
@@ -242,6 +320,7 @@ class Gpu
                     {
                         setMode(Mode.VBLANK);
                         onVBlankInterrupt();
+                        onFrameReady(m_frame);
                     }
                     else
                     {
@@ -273,6 +352,7 @@ class Gpu
                 {
                     m_counter -= 172;
                     setMode(Mode.HBLANK);
+                    renderScanline();
                 }
                 break;
             default:
