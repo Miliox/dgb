@@ -1,4 +1,5 @@
 import memory;
+import bitmask;
 
 import std.stdio;
 import core.bitop;
@@ -245,31 +246,31 @@ class Cpu
             if ((m_ie & m_if & IFLAG.VBLANK) != 0)
             {
                 m_ime = false;
-                setFlag(m_if, IFLAG.VBLANK, false);
+                bitmask.setIf(m_if, IFLAG.VBLANK, false);
                 rst(0x40);
             }
             else if ((m_ie & m_if & IFLAG.LCDC) != 0)
             {
                 m_ime = false;
-                setFlag(m_if, IFLAG.LCDC, false);
+                bitmask.setIf(m_if, IFLAG.LCDC, false);
                 rst(0x48);
             }
             else if ((m_ie & m_if & IFLAG.TIMER) != 0)
             {
                 m_ime = false;
-                setFlag(m_if, IFLAG.TIMER, false);
+                bitmask.setIf(m_if, IFLAG.TIMER, false);
                 rst(0x50);
             }
             else if ((m_ie & m_if & IFLAG.SERIAL) != 0)
             {
                 m_ime = false;
-                setFlag(m_if, IFLAG.SERIAL, false);
+                bitmask.setIf(m_if, IFLAG.SERIAL, false);
                 rst(0x58);
             }
             else if ((m_ie & m_if & IFLAG.P10P13) != 0)
             {
                 m_ime = false;
-                setFlag(m_if, IFLAG.P10P13, false);
+                bitmask.setIf(m_if, IFLAG.P10P13, false);
                 rst(0x60);
             }
         }
@@ -348,7 +349,7 @@ class Cpu
         // RLCA
         isaTable[0x07] = delegate() {
             rlc8(m_regs.af.a, m_regs.af.f);
-            setFlag(m_regs.af.f, FLAG.ZERO | FLAG.NEG | FLAG.HALF , false);
+            bitmask.setIf(m_regs.af.f, FLAG.ZERO | FLAG.NEG | FLAG.HALF , false);
             return ubyte(4);
         };
 
@@ -399,7 +400,7 @@ class Cpu
         // RRCA
         isaTable[0x0f] = delegate() {
             rrc8(m_regs.af.a, m_regs.af.f);
-            setFlag(m_regs.af.f, FLAG.ZERO | FLAG.NEG | FLAG.HALF , false);
+            bitmask.setIf(m_regs.af.f, FLAG.ZERO | FLAG.NEG | FLAG.HALF , false);
             return ubyte(4);
         };
 
@@ -451,7 +452,7 @@ class Cpu
         // RLA
         isaTable[0x17] = delegate() {
             rl8(m_regs.af.a, m_regs.af.f);
-            setFlag(m_regs.af.f, FLAG.ZERO | FLAG.NEG | FLAG.HALF , false);
+            bitmask.setIf(m_regs.af.f, FLAG.ZERO | FLAG.NEG | FLAG.HALF , false);
             return ubyte(4);
         };
 
@@ -501,7 +502,7 @@ class Cpu
         // RRA
         isaTable[0x1f] = delegate() {
             rr8(m_regs.af.a, m_regs.af.f);
-            setFlag(m_regs.af.f, FLAG.ZERO | FLAG.NEG | FLAG.HALF, false);
+            bitmask.setIf(m_regs.af.f, FLAG.ZERO | FLAG.NEG | FLAG.HALF, false);
             return ubyte(4);
         };
 
@@ -3597,32 +3598,6 @@ class Cpu
         m_regs.pc = address;
     }
 
-    // auxiliary functions
-
-    // set mask if set else resets
-    private static pure void setFlag(ref ubyte flags, ubyte mask, ubyte set)
-    {
-        if (set)
-        {
-            flags |= mask;
-        }
-        else // reset
-        {
-            flags &= ~mask;
-        }
-    }
-
-    unittest
-    {
-        ubyte flags = 0x80;
-        setFlag(flags, 0x04, true);
-        assert(flags == 0x84);
-
-        flags = 0xff;
-        setFlag(flags, 0x88, false);
-        assert(flags == 0x77);
-    }
-
     // 8 bits arithmetics
 
     /// add for 8 bits registers
@@ -3631,10 +3606,10 @@ class Cpu
         bool fullCarry = (ushort(acc) + ushort(reg)) > 0xff; // carry from bit 7
         acc += reg;
 
-        setFlag(f, FLAG.NEG,   false);
-        setFlag(f, FLAG.ZERO,  acc == 0);
-        setFlag(f, FLAG.HALF,  halfCarry);
-        setFlag(f, FLAG.CARRY, fullCarry);
+        bitmask.setIf(f, FLAG.NEG,   false);
+        bitmask.setIf(f, FLAG.ZERO,  acc == 0);
+        bitmask.setIf(f, FLAG.HALF,  halfCarry);
+        bitmask.setIf(f, FLAG.CARRY, fullCarry);
     }
 
     unittest
@@ -3669,10 +3644,10 @@ class Cpu
         bool fullCarry = (ushort(acc) + ushort(reg) + carry) > 0xff; // carry from bit 7
         acc += reg + carry;
 
-        setFlag(f, FLAG.NEG,   false);
-        setFlag(f, FLAG.ZERO,  acc == 0);
-        setFlag(f, FLAG.HALF,  halfCarry);
-        setFlag(f, FLAG.CARRY, fullCarry);
+        bitmask.setIf(f, FLAG.NEG,   false);
+        bitmask.setIf(f, FLAG.ZERO,  acc == 0);
+        bitmask.setIf(f, FLAG.HALF,  halfCarry);
+        bitmask.setIf(f, FLAG.CARRY, fullCarry);
     }
 
     unittest
@@ -3728,10 +3703,10 @@ class Cpu
         // sub operation
         acc -= reg;
 
-        setFlag(f, FLAG.NEG,   true);
-        setFlag(f, FLAG.ZERO,  acc == 0);
-        setFlag(f, FLAG.HALF,  halfCarry);
-        setFlag(f, FLAG.CARRY, fullCarry);
+        bitmask.setIf(f, FLAG.NEG,   true);
+        bitmask.setIf(f, FLAG.ZERO,  acc == 0);
+        bitmask.setIf(f, FLAG.HALF,  halfCarry);
+        bitmask.setIf(f, FLAG.CARRY, fullCarry);
     }
 
     unittest
@@ -3790,9 +3765,9 @@ class Cpu
     {
         acc &= reg;
 
-        setFlag(f, FLAG.HALF, true);
-        setFlag(f, FLAG.NEG | FLAG.CARRY, false);
-        setFlag(f, FLAG.ZERO, acc == 0);
+        bitmask.setIf(f, FLAG.HALF, true);
+        bitmask.setIf(f, FLAG.NEG | FLAG.CARRY, false);
+        bitmask.setIf(f, FLAG.ZERO, acc == 0);
     }
 
     unittest
@@ -3815,8 +3790,8 @@ class Cpu
     {
         acc |= reg;
 
-        setFlag(f, FLAG.NEG | FLAG.HALF | FLAG.CARRY, false);
-        setFlag(f, FLAG.ZERO, acc == 0);
+        bitmask.setIf(f, FLAG.NEG | FLAG.HALF | FLAG.CARRY, false);
+        bitmask.setIf(f, FLAG.ZERO, acc == 0);
     }
 
     unittest
@@ -3841,8 +3816,8 @@ class Cpu
     {
         acc ^= reg;
 
-        setFlag(f, FLAG.NEG | FLAG.HALF | FLAG.CARRY, false);
-        setFlag(f, FLAG.ZERO, acc == 0);
+        bitmask.setIf(f, FLAG.NEG | FLAG.HALF | FLAG.CARRY, false);
+        bitmask.setIf(f, FLAG.ZERO, acc == 0);
     }
 
     unittest
@@ -3873,7 +3848,7 @@ class Cpu
         // except for this modified behavior
         if (less)
         {
-            setFlag(f, FLAG.CARRY, true);
+            bitmask.setIf(f, FLAG.CARRY, true);
         }
     }
 
@@ -3911,9 +3886,9 @@ class Cpu
         bool halfCarry = (r & 0xf) == 0xf;
         r += 1;
 
-        setFlag(f, FLAG.ZERO,  r == 0);
-        setFlag(f, FLAG.NEG,   false);
-        setFlag(f, FLAG.HALF,  halfCarry);
+        bitmask.setIf(f, FLAG.ZERO,  r == 0);
+        bitmask.setIf(f, FLAG.NEG,   false);
+        bitmask.setIf(f, FLAG.HALF,  halfCarry);
     }
 
     unittest
@@ -3935,9 +3910,9 @@ class Cpu
         bool halfCarry = (r & 0xf) == 0;
         r -= 1;
 
-        setFlag(f, FLAG.ZERO, r == 0);
-        setFlag(f, FLAG.NEG, true);
-        setFlag(f, FLAG.HALF, halfCarry);
+        bitmask.setIf(f, FLAG.ZERO, r == 0);
+        bitmask.setIf(f, FLAG.NEG, true);
+        bitmask.setIf(f, FLAG.HALF, halfCarry);
     }
 
     unittest
@@ -3964,9 +3939,9 @@ class Cpu
 
         acc += reg;
 
-        setFlag(f, FLAG.NEG,   false);
-        setFlag(f, FLAG.HALF,  halfCarry);
-        setFlag(f, FLAG.CARRY, fullCarry);
+        bitmask.setIf(f, FLAG.NEG,   false);
+        bitmask.setIf(f, FLAG.HALF,  halfCarry);
+        bitmask.setIf(f, FLAG.CARRY, fullCarry);
     }
 
     unittest
@@ -4027,8 +4002,8 @@ class Cpu
     {
         r = ((r & 0x0f) << 4) | ((r & 0xf0) >> 4);
 
-        setFlag(f, FLAG.ZERO, r == 0);
-        setFlag(f, FLAG.NEG | FLAG.HALF | FLAG.CARRY, false);
+        bitmask.setIf(f, FLAG.ZERO, r == 0);
+        bitmask.setIf(f, FLAG.NEG | FLAG.HALF | FLAG.CARRY, false);
     }
 
     unittest
@@ -4162,9 +4137,9 @@ class Cpu
             }
         }
 
-        setFlag(f, FLAG.ZERO,  r == 0);
-        setFlag(f, FLAG.HALF,  false);
-        setFlag(f, FLAG.CARRY, setCarry);
+        bitmask.setIf(f, FLAG.ZERO,  r == 0);
+        bitmask.setIf(f, FLAG.HALF,  false);
+        bitmask.setIf(f, FLAG.CARRY, setCarry);
     }
 
     unittest
@@ -4182,7 +4157,7 @@ class Cpu
     private static pure void cpl8(ref ubyte r, ref ubyte f)
     {
         r = ~r;
-        setFlag(f, FLAG.NEG | FLAG.HALF, true);
+        bitmask.setIf(f, FLAG.NEG | FLAG.HALF, true);
     }
 
     unittest
@@ -4197,8 +4172,8 @@ class Cpu
     // complement carry flag
     private static pure void ccf(ref ubyte f)
     {
-        setFlag(f, FLAG.NEG | FLAG.HALF, false);
-        setFlag(f, FLAG.CARRY, (f & FLAG.CARRY) == 0);
+        bitmask.setIf(f, FLAG.NEG | FLAG.HALF, false);
+        bitmask.setIf(f, FLAG.CARRY, (f & FLAG.CARRY) == 0);
     }
 
     unittest
@@ -4217,8 +4192,8 @@ class Cpu
     // set carry flag
     private static pure void scf(ref ubyte f)
     {
-        setFlag(f, FLAG.NEG | FLAG.HALF, false);
-        setFlag(f, FLAG.CARRY, true);
+        bitmask.setIf(f, FLAG.NEG | FLAG.HALF, false);
+        bitmask.setIf(f, FLAG.CARRY, true);
     }
 
     unittest
@@ -4240,9 +4215,9 @@ class Cpu
         bool carry = (r & 0x80) != 0;
         r = rol(r , 1);
 
-        setFlag(f, FLAG.ZERO, r == 0); // must be reset on RLCA, use as is in CB ext.
-        setFlag(f, FLAG.NEG | FLAG.HALF, false);
-        setFlag(f, FLAG.CARRY, carry);
+        bitmask.setIf(f, FLAG.ZERO, r == 0); // must be reset on RLCA, use as is in CB ext.
+        bitmask.setIf(f, FLAG.NEG | FLAG.HALF, false);
+        bitmask.setIf(f, FLAG.CARRY, carry);
     }
 
     unittest
@@ -4266,9 +4241,9 @@ class Cpu
             r += 1;
         }
 
-        setFlag(f, FLAG.ZERO, r == 0); // must be reset on RLA, use as is in CB ext.
-        setFlag(f, FLAG.NEG | FLAG.HALF, false);
-        setFlag(f, FLAG.CARRY, carry);
+        bitmask.setIf(f, FLAG.ZERO, r == 0); // must be reset on RLA, use as is in CB ext.
+        bitmask.setIf(f, FLAG.NEG | FLAG.HALF, false);
+        bitmask.setIf(f, FLAG.CARRY, carry);
     }
 
     unittest
@@ -4286,9 +4261,9 @@ class Cpu
         bool carry = (r & 0x01) != 0;
         r = ror(r , 1);
 
-        setFlag(f, FLAG.ZERO, r == 0); // must be reset on RLCA, use as is in CB ext.
-        setFlag(f, FLAG.NEG | FLAG.HALF, false);
-        setFlag(f, FLAG.CARRY, carry);
+        bitmask.setIf(f, FLAG.ZERO, r == 0); // must be reset on RLCA, use as is in CB ext.
+        bitmask.setIf(f, FLAG.NEG | FLAG.HALF, false);
+        bitmask.setIf(f, FLAG.CARRY, carry);
     }
 
     unittest
@@ -4312,9 +4287,9 @@ class Cpu
             r += 0x80;
         }
 
-        setFlag(f, FLAG.ZERO, r == 0); // must be reset on RLCA, use as is in CB ext.
-        setFlag(f, FLAG.NEG | FLAG.HALF, false);
-        setFlag(f, FLAG.CARRY, carry);
+        bitmask.setIf(f, FLAG.ZERO, r == 0); // must be reset on RLCA, use as is in CB ext.
+        bitmask.setIf(f, FLAG.NEG | FLAG.HALF, false);
+        bitmask.setIf(f, FLAG.CARRY, carry);
     }
 
     unittest
@@ -4332,9 +4307,9 @@ class Cpu
         bool carry = (acc & 0x80) != 0;
         acc <<= reg;
 
-        setFlag(f, FLAG.ZERO, acc == 0);
-        setFlag(f, FLAG.NEG | FLAG.HALF, false);
-        setFlag(f, FLAG.CARRY, carry);
+        bitmask.setIf(f, FLAG.ZERO, acc == 0);
+        bitmask.setIf(f, FLAG.NEG | FLAG.HALF, false);
+        bitmask.setIf(f, FLAG.CARRY, carry);
     }
 
     unittest
@@ -4353,9 +4328,9 @@ class Cpu
         bool carry = (acc & 0x01) != 0;
         acc = (acc & 0x80) | (acc >> reg);
 
-        setFlag(f, FLAG.ZERO, acc == 0);
-        setFlag(f, FLAG.NEG | FLAG.HALF, false);
-        setFlag(f, FLAG.CARRY, carry);
+        bitmask.setIf(f, FLAG.ZERO, acc == 0);
+        bitmask.setIf(f, FLAG.NEG | FLAG.HALF, false);
+        bitmask.setIf(f, FLAG.CARRY, carry);
     }
 
     unittest
@@ -4374,9 +4349,9 @@ class Cpu
         bool carry = (acc & 0x01) != 0;
         acc = (acc >> reg) & 0x7f;
 
-        setFlag(f, FLAG.ZERO, acc == 0);
-        setFlag(f, FLAG.NEG | FLAG.HALF, false);
-        setFlag(f, FLAG.CARRY, carry);
+        bitmask.setIf(f, FLAG.ZERO, acc == 0);
+        bitmask.setIf(f, FLAG.NEG | FLAG.HALF, false);
+        bitmask.setIf(f, FLAG.CARRY, carry);
     }
 
     unittest
@@ -4395,9 +4370,9 @@ class Cpu
         ubyte mask = (1 << i) & 0xff;
         bool isSet = (r & mask) != 0;
 
-        setFlag(f, FLAG.ZERO, !isSet); // Set if bit b of register r is 0
-        setFlag(f, FLAG.NEG, false);
-        setFlag(f, FLAG.HALF, true);
+        bitmask.setIf(f, FLAG.ZERO, !isSet); // Set if bit b of register r is 0
+        bitmask.setIf(f, FLAG.NEG, false);
+        bitmask.setIf(f, FLAG.HALF, true);
     }
 
     unittest
