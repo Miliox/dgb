@@ -1,5 +1,7 @@
 import std.stdio;
 import std.file;
+
+import core.time;
 import core.thread;
 
 import cpu;
@@ -44,6 +46,7 @@ class Rom : Memory
 class Emulator : Thread
 {
     shared bool running;
+    shared bool sync = true;
 
     private Cpu cpu;
     private Gpu gpu;
@@ -51,6 +54,15 @@ class Emulator : Thread
     private Timer timer;
 
     void delegate() onStop;
+
+    private immutable int TICKS_PER_SECOND = 4194304;
+    private immutable int TICKS_PER_FRAME  = 70224;
+
+    private immutable Duration FRAME_PERIOD = dur!"nsecs"(16742706); // (TICKS_PER_FRAME / TICKS_PER_SECOND)
+
+    // Clock synchronization timers
+    private MonoTime frameTimestamp; // mark the begining of a frame
+    private Duration delayOversleep; // needed to compensate imprecisions of sleep()
 
     this(string filepath) {
         super(&run);
@@ -83,10 +95,29 @@ class Emulator : Thread
         };
     }
 
+    /// Sync gameboy original clock with this system clock on frame units
+    private void syncFrame() {
+        auto idleTimestamp = MonoTime.currTime;
+        auto delay = FRAME_PERIOD - (idleTimestamp - frameTimestamp) - delayOversleep;
+
+        if (sync) {
+            sleep(delay);
+        }
+
+        frameTimestamp = MonoTime.currTime;
+        delayOversleep = sync ? ((frameTimestamp - idleTimestamp) - delay) : Duration.zero;
+    }
+
     private void run()
     {
         running = true;
-        while (running) {
+
+        frameTimestamp = MonoTime.currTime;
+        delayOversleep = Duration.zero;
+
+        int tickCount = 0;
+        while (running)
+        {
             if (cpu.registers().pc == 0x100)
             {
                 // Stop execution for now
@@ -98,6 +129,12 @@ class Emulator : Thread
             ubyte cycles = cpu.step();
             gpu.addTicks(cycles);
             timer.addTicks(cycles);
+
+            tickCount += cycles;
+            if (tickCount >= TICKS_PER_FRAME) {
+                tickCount -= TICKS_PER_FRAME;
+                syncFrame();
+            }
         }
         onStop();
     }

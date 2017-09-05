@@ -34,7 +34,7 @@ dub test
 - [ ] Debugger Break
 - [X] Debugger Step
 - [X] Execution Cycle
-- [ ] Execution Clock Sync
+- [X] Execution Clock Sync
 - [X] Memory Common Interface
 - [ ] Memory Management Unit (WIP)
 - [X] Timer Controller
