@@ -19,8 +19,7 @@ dub test
 
 ## Requirements
 
-* DFSML
-* DFSMLC
+* SDL2
 
 ## Progress
 
