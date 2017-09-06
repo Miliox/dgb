@@ -325,6 +325,7 @@ class Gpu
                     {
                         setMode(Mode.VBLANK);
                         onVBlankInterrupt();
+                        renderScanline();
                         onFrameReady(m_frame);
                     }
                     else
