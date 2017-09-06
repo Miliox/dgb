@@ -1,5 +1,19 @@
 import bitmask;
 
+immutable int SCREEN_WIDTH = 160;
+immutable int SCREEN_HEIGHT = 144;
+
+immutable int SCREEN_BPP = 2;               // bits per pixel
+immutable int SCREEN_PPB = 8 / SCREEN_BPP;  // pixels per byte
+
+immutable int TILE_SIZE = 16;
+immutable int TILE_LINE_SIZE = 2;
+immutable int TILE_HEIGHT = 8;
+immutable int TILE_WIDTH = 8;
+
+immutable int TILES_PER_LINE = 32;
+immutable int TILES_PER_COLUMN = 32;
+
 class Gpu
 {
     private int m_counter;
@@ -24,19 +38,6 @@ class Gpu
     void delegate() onVBlankInterrupt;
     void delegate() onLcdcStatInterrupt;
     void delegate(ref ubyte[][] frame) onFrameReady;
-
-    private static immutable int SCREEN_WIDTH = 160;
-    private static immutable int SCREEN_HEIGHT = 144;
-    private static immutable int SCREEN_BPP = 2;               // bits per pixel
-    private static immutable int SCREEN_PPB = 8 / SCREEN_BPP;  // pixels per byte
-
-    private static immutable int TILE_SIZE = 16;
-    private static immutable int TILE_LINE_SIZE = 2;
-    private static immutable int TILE_HEIGHT = 8;
-    private static immutable int TILE_WIDTH = 8;
-
-    private static immutable int TILES_PER_LINE = 32;
-    private static immutable int TILES_PER_COLUMN = 32;
 
     private enum Lcdc : ubyte
     {
