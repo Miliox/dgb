@@ -5,6 +5,7 @@ immutable int SCREEN_HEIGHT = 144;
 
 immutable int SCREEN_BPP = 2;               // bits per pixel
 immutable int SCREEN_PPB = 8 / SCREEN_BPP;  // pixels per byte
+immutable int SCREEN_BYTES_PER_LINE = SCREEN_WIDTH / SCREEN_PPB;
 
 immutable int TILE_SIZE = 16;
 immutable int TILE_LINE_SIZE = 2;
@@ -33,11 +34,11 @@ class Gpu
     private ubyte[] m_oam = new byte[0xa0];
     private ubyte[] m_ram = new byte[0x2000];
 
-    private ubyte[][] m_frame = new byte[SCREEN_HEIGHT][SCREEN_WIDTH * SCREEN_PPB];
+    private ubyte[] m_frame = new byte[SCREEN_HEIGHT * SCREEN_BYTES_PER_LINE];
 
     void delegate() onVBlankInterrupt;
     void delegate() onLcdcStatInterrupt;
-    void delegate(ref ubyte[][] frame) onFrameReady;
+    void delegate(ref ubyte[] frame) onFrameReady;
 
     private enum Lcdc : ubyte
     {
@@ -296,11 +297,14 @@ class Gpu
             ubyte pixelGroupPos = cast(ubyte) (x / SCREEN_PPB);
             ubyte pixelIndex = cast(ubyte) (x % SCREEN_PPB);
 
-            ubyte pixelGroup = m_frame[m_currentY][pixelGroupPos];
+            int pos = pixelGroupPos + m_currentY * SCREEN_BYTES_PER_LINE;
+
+            ubyte pixelGroup = m_frame[pos];
+
             pixelGroup &= 0x3 << (SCREEN_BPP * pixelIndex);
             pixelGroup |= pixel << (SCREEN_BPP * pixelIndex);
 
-            m_frame[m_currentY][pixelGroupPos] = pixelGroup;
+            m_frame[pos] = pixelGroup;
         }
     }
 

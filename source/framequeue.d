@@ -15,7 +15,7 @@ class FrameQueue {
     private shared int reader = 0;
     private shared int writer = 0;
 
-    private ubyte[BUFFER_COUNT][] buffers;
+    private ubyte[][] buffers;
 
     this(int lines, int columns, int bpp) {
         this.lines = lines;
@@ -23,26 +23,19 @@ class FrameQueue {
         this.bpp = bpp;
 
         this.bytesPerLine = columns * bpp / 8;
-        this.size = lines * columns * bytesPerLine;
+        this.size = lines * bytesPerLine;
 
-        this.buffers = new ubyte[BUFFER_COUNT][size];
+        this.buffers = new ubyte[][](3, lines * bytesPerLine);
     }
 
     // Write a frame to argument. (Always use the same thread to write)
-    bool writeFrame(ref ubyte[][] frame) {
-        if (!isFull()) {
+    bool writeFrame(ref ubyte[] frame) {
+        if (isFull()) {
             // drop frame, no buffer available
             return false;
         }
 
-        foreach (int l; 0..lines)
-        {
-            int b = l * bytesPerLine;
-            int e = (l + 1) * bytesPerLine;
-
-            // flat 2d buffer to 1d
-            buffers[writer][b .. e] = frame[l][0 .. bytesPerLine];
-        }
+        buffers[writer][0 .. size] = frame[0 .. frame.length];
 
         writer = (writer + 1) % BUFFER_COUNT; // Not thread safe if more than one thread writing
         return true;
@@ -50,9 +43,8 @@ class FrameQueue {
 
     // Read a frame to argument. (Always use the same thread to read)
     bool readFrame(ref ubyte[] frame) {
-        if (!isEmpty()) {
+        if (isEmpty()) {
             // no frame to available to read
-            writeln("FrameQueue FULL");
             return false;
         }
 
