@@ -11,6 +11,9 @@ void main(string[] args)
 
     Gui gui = new Gui(4);
     Emulator emulator = new Emulator(args[1]);
+    emulator.onFrame = (ref ubyte[][] frame) {
+        gui.putFrame(frame);
+    };
     emulator.onStop = {
         gui.stop();
     };

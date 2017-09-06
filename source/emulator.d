@@ -53,6 +53,7 @@ class Emulator : Thread
     private Rom rom;
     private Timer timer;
 
+    void delegate(ref ubyte[][] frame) onFrame;
     void delegate() onStop;
 
     private immutable int TICKS_PER_SECOND = 4194304;
@@ -91,7 +92,7 @@ class Emulator : Thread
             cpu.lcdcInt();
         };
         gpu.onFrameReady = (ref ubyte[][] frame) {
-            // TODO: Forward to GUI
+            onFrame(frame);
         };
     }
 
