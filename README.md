@@ -36,6 +36,7 @@ dub test
 - [X] Execution Clock Sync
 - [X] Memory Common Interface
 - [ ] Memory Management Unit (WIP)
+- [X] OAM DMA
 - [X] Timer Controller
 - [X] BIOS Check Pass
 - [X] Cartridge Load
