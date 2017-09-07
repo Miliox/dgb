@@ -40,7 +40,7 @@ dub test
 - [X] BIOS Check Pass
 - [X] Cartridge Load
 - [X] GPU Timing
-- [ ] GPU Background Render
+- [X] GPU Background Render
 - [ ] GPU Sprite Render
 - [X] Window & Media Library (SDL2)
 - [ ] Sound Controller
