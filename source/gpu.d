@@ -222,7 +222,7 @@ class Gpu
         return (bitmask.check(m_lcdc, Lcdc.BG_DATA_SELECT) ? 0x8000 : 0x9000) - 0x8000;
     }
 
-    @property private bool bgSignedOffset() {
+    @property private bool isTileNumberSigned() {
         return !bitmask.check(m_lcdc, Lcdc.BG_DATA_SELECT);
     }
 
@@ -259,52 +259,69 @@ class Gpu
         }
     }
 
+    private int getTileDataPos(int line, ubyte tileNumber) {
+        int pos = (line % TILE_HEIGHT) * 2;
+
+        if (tileNumber < 128 && !isTileNumberSigned())
+        {
+            pos += tileNumber * TILE_SIZE;
+        }
+        else
+        {
+            pos += byte(tileNumber) * TILE_SIZE;
+        }
+
+        return pos;
+    }
+
+    private void writeShade(int x, int y, int shadeIndex) {
+        immutable ubyte[] mask  = [0xc0, 0x30, 0x0c, 0x03];
+
+        ubyte shade = m_bgPalette >> (shadeIndex * 2);
+        shade &= 0x3;
+
+        int subIdx = x % SCREEN_PPB;
+        int shift = (8 - SCREEN_BPP) - (subIdx * SCREEN_BPP);
+        int pos = (x / SCREEN_PPB)  + (y * SCREEN_BYTES_PER_LINE);
+
+        ubyte shadeGroup = m_frame[pos];
+        shadeGroup &= ~mask[subIdx];
+        shadeGroup |= mask[subIdx] & (shade << shift);
+        m_frame[pos] = shadeGroup;
+    }
+
     private void renderScanline() {
         if (m_currentY >= SCREEN_HEIGHT) {
             // out-of-bound
             return;
         }
 
-        immutable ushort dataPos = bgTileDataPosition();
-        immutable ushort mapPos  = bgTileMapPosition();
+        immutable ushort dataAddr = bgTileDataPosition();
+        immutable ushort mapAddr  = bgTileMapPosition();
 
-        int y = (m_scrollY + m_currentY) % 256;
-        for (int x = 0; x < SCREEN_WIDTH; x++)
+        int screenY = m_currentY;
+        int windowY = (screenY + m_scrollY) % 256;
+
+        for (int screenX = 0; screenX < SCREEN_WIDTH; screenX++)
         {
-            int bgIndex = (x / TILE_WIDTH) + ((y / TILE_HEIGHT) * TILES_PER_LINE);
+            int windowX = (screenX + m_scrollX) % 256;
 
-            ubyte tileNumber = m_ram[mapPos + bgIndex];
+            int winTileIndex = (windowX / TILE_WIDTH) + ((windowY / TILE_HEIGHT) * TILES_PER_LINE);
 
-            int tileDataPos = dataPos + (y % TILE_HEIGHT) * TILE_LINE_SIZE;
-            if (bgSignedOffset())
-            {
-                tileDataPos += cast(byte) tileNumber;
-            }
-            else
-            {
-                tileDataPos += tileNumber;
-            }
+            ubyte tileIndex = m_ram[mapAddr + winTileIndex];
 
-            ubyte tileLsb = m_ram[tileDataPos];
-            ubyte tileHsb = m_ram[tileDataPos + 1];
+            int tileDataAddr = dataAddr + getTileDataPos(windowY, tileIndex);
 
-            ubyte bitIndex = 7 - (x % 8);
+            ubyte tileLsb = m_ram[tileDataAddr];
+            ubyte tileMsb = m_ram[tileDataAddr + 1];
 
-            int pixel = (tileLsb >> bitIndex) & 1;
-            pixel *= 2;
-            pixel += (tileHsb >> bitIndex) & 1;
+            ubyte bitIndex = 7 - (screenX % 8);
 
-            ubyte pixelGroupPos = cast(ubyte) (x / SCREEN_PPB);
-            ubyte pixelIndex = cast(ubyte) (x % SCREEN_PPB);
+            ubyte shadeIndex = 0;
+            shadeIndex += ((tileLsb >> bitIndex) & 1) ? 2 : 0;
+            shadeIndex += ((tileMsb >> bitIndex) & 1) ? 1 : 0;
 
-            int pos = pixelGroupPos + m_currentY * SCREEN_BYTES_PER_LINE;
-
-            ubyte pixelGroup = m_frame[pos];
-
-            pixelGroup &= 0x3 << (SCREEN_BPP * pixelIndex);
-            pixelGroup |= pixel << (SCREEN_BPP * pixelIndex);
-
-            m_frame[pos] = pixelGroup;
+            writeShade(screenX, screenY, shadeIndex);
         }
     }
 
