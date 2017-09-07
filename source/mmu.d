@@ -35,8 +35,12 @@ class Mmu : Memory {
 
     private bool m_useBios = true;
 
-    private ubyte[] lram = new ubyte[0x2000];
-    private ubyte[] hram = new ubyte[0x7f];
+    private bool   m_dmaOn = false;
+    private ubyte  m_dmaIndex = 0;
+    private ushort m_dmaBaseAddress = 0;
+
+    private ubyte[] m_lram = new ubyte[0x2000];
+    private ubyte[] m_hram = new ubyte[0x7f];
 
     @property Cpu cpu(Cpu cpu)
     {
@@ -58,7 +62,6 @@ class Mmu : Memory {
         return m_gpu;
     }
 
-
     @property Timer timer(Timer timer)
     {
         return m_timer = timer;
@@ -79,6 +82,24 @@ class Mmu : Memory {
         return m_rom;
     }
 
+    void addTicks(ubyte elapsed) {
+        while (m_dmaOn && elapsed > 0)
+        {
+            if (m_dmaIndex < 0xa0)
+            {
+                // transfer will take 640 cycles (GB takes 671 ~160usec)
+                ushort addr = cast(ushort) (m_dmaBaseAddress + m_dmaIndex);
+                m_gpu.oam(m_dmaIndex, read8(addr));
+                m_dmaIndex += 1;
+            }
+            else {
+                m_dmaOn = false;
+            }
+            elapsed -= 4; // elapsed cpu cycles always multiple of 4, so no checks for underflown
+        }
+
+    }
+
     ubyte read8(ushort address)
     {
         if (m_useBios && address < bios.length)
@@ -95,11 +116,11 @@ class Mmu : Memory {
         }
         else if (address >= 0xc000 && address < 0xe000)
         {
-            return lram[address - 0xc000];
+            return m_lram[address - 0xc000];
         }
         else if (address >= 0xe000 && address < 0xfe00)
         {
-            return lram[address - 0xe000];
+            return m_lram[address - 0xe000];
         }
         else if (address < 0xfea0)
         {
@@ -107,7 +128,7 @@ class Mmu : Memory {
         }
         else if (address >= 0xff80 && address < 0xffff)
         {
-            return hram[address - 0xff80];
+            return m_hram[address - 0xff80];
         }
 
         switch (address)
@@ -132,6 +153,8 @@ class Mmu : Memory {
                 return m_gpu.ly();
             case 0xff45:
                 return m_gpu.lyc();
+            case 0xff46:
+                return 0;
             case 0xff47:
                 return m_gpu.bgp();
             case 0xff48:
@@ -169,12 +192,12 @@ class Mmu : Memory {
         }
         else if (address >= 0xc000 && address < 0xe000)
         {
-            lram[address - 0xc000] = value;
+            m_lram[address - 0xc000] = value;
             return;
         }
         else if (address >= 0xe000 && address < 0xfe00)
         {
-            lram[address - 0xe000] = value;
+            m_lram[address - 0xe000] = value;
             return;
         }
         else if (address < 0xfea0)
@@ -184,7 +207,7 @@ class Mmu : Memory {
         }
         else if (address >= 0xff80 && address < 0xffff)
         {
-            hram[address - 0xff80] = value;
+            m_hram[address - 0xff80] = value;
             return;
         }
 
@@ -223,6 +246,13 @@ class Mmu : Memory {
             case 0xff45:
                 m_gpu.lyc(value);
                 break;
+            case 0xff46:
+                if (value <= 0xf1) {
+                    m_dmaOn = true;
+                    m_dmaIndex = 0;
+                    m_dmaBaseAddress = (value << 8);
+                }
+                break;
             case 0xff47:
                 m_gpu.bgp(value);
                 break;
@@ -251,4 +281,5 @@ class Mmu : Memory {
                 break;
         }
     }
+
 }

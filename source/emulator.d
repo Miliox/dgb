@@ -50,6 +50,7 @@ class Emulator : Thread
 
     private Cpu cpu;
     private Gpu gpu;
+    private Mmu mmu;
     private Rom rom;
     private Timer timer;
 
@@ -75,7 +76,7 @@ class Emulator : Thread
         gpu = new Gpu();
         timer = new Timer();
 
-        Mmu mmu = new Mmu();
+        mmu = new Mmu();
         mmu.cpu(cpu);
         mmu.gpu(gpu);
         mmu.rom(rom);
@@ -129,6 +130,7 @@ class Emulator : Thread
 
             ubyte cycles = cpu.step();
             gpu.addTicks(cycles);
+            mmu.addTicks(cycles);
             timer.addTicks(cycles);
 
             tickCount += cycles;
