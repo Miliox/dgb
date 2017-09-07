@@ -15,6 +15,9 @@ immutable int TILE_WIDTH = 8;
 immutable int TILES_PER_LINE = 32;
 immutable int TILES_PER_COLUMN = 32;
 
+immutable int BACKGROUND_WIDTH = 256;
+immutable int BACKGROUND_HEIGHT = 256;
+
 class Gpu
 {
     private int m_counter;
@@ -214,11 +217,11 @@ class Gpu
         }
     }
 
-    @property private ushort bgTileMapPosition() {
+    @property private ushort bgTileMapAddress() {
         return (bitmask.check(m_lcdc, Lcdc.BG_TILE_SELECT) ? 0x9C00 : 0x9800) - 0x8000;
     }
 
-    @property private ushort bgTileDataPosition() {
+    @property private ushort bgTileDataAddress() {
         return (bitmask.check(m_lcdc, Lcdc.BG_DATA_SELECT) ? 0x8000 : 0x9000) - 0x8000;
     }
 
@@ -262,13 +265,13 @@ class Gpu
     private int getTileDataPos(int line, ubyte tileNumber) {
         int pos = (line % TILE_HEIGHT) * 2;
 
-        if (tileNumber < 128 && !isTileNumberSigned())
+        if (tileNumber < 128 || !isTileNumberSigned())
         {
             pos += tileNumber * TILE_SIZE;
         }
         else
         {
-            pos += byte(tileNumber) * TILE_SIZE;
+            pos += cast(byte) (tileNumber) * TILE_SIZE;
         }
 
         return pos;
@@ -296,15 +299,15 @@ class Gpu
             return;
         }
 
-        immutable ushort dataAddr = bgTileDataPosition();
-        immutable ushort mapAddr  = bgTileMapPosition();
+        immutable ushort dataAddr = bgTileDataAddress();
+        immutable ushort mapAddr  = bgTileMapAddress();
 
         int screenY = m_currentY;
-        int windowY = (screenY + m_scrollY) % 256;
+        int windowY = (screenY + m_scrollY) % BACKGROUND_HEIGHT;
 
         for (int screenX = 0; screenX < SCREEN_WIDTH; screenX++)
         {
-            int windowX = (screenX + m_scrollX) % 256;
+            int windowX = (screenX + m_scrollX) % BACKGROUND_WIDTH;
 
             int winTileIndex = (windowX / TILE_WIDTH) + ((windowY / TILE_HEIGHT) * TILES_PER_LINE);
 
