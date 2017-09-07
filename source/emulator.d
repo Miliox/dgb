@@ -101,7 +101,7 @@ class Emulator : Thread
         auto idleTimestamp = MonoTime.currTime;
         auto delay = FRAME_PERIOD - (idleTimestamp - frameTimestamp) - delayOversleep;
 
-        if (sync) {
+        if (sync && delay > dur!("nsecs")(0)) {
             sleep(delay);
         }
 
