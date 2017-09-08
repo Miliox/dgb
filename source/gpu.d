@@ -233,6 +233,14 @@ class Gpu
         return bitmask.check(m_lcdc, Lcdc.BG_DISPLAY);
     }
 
+    @property private bool spriteVisible() {
+        return bitmask.check(m_lcdc, Lcdc.OBJ_ENABLE);
+    }
+
+    @property private bool isDisplayOn() {
+        return bitmask.check(m_lcdc, Lcdc.LCD_ENABLE);
+    }
+
     private void setMode(Mode mode)
     {
         m_stat = (m_stat & ~Stat.MODE_FLAG) | (mode & Stat.MODE_FLAG);
@@ -293,12 +301,14 @@ class Gpu
         m_frame[pos] = shadeGroup;
     }
 
-    private void renderScanline() {
-        if (m_currentY >= SCREEN_HEIGHT) {
-            // out-of-bound
-            return;
-        }
+    private void fillScanline(ubyte shadeGroup) {
+        int b = m_currentY * SCREEN_BYTES_PER_LINE;
+        int e = b + SCREEN_BYTES_PER_LINE;
+        m_frame[b .. e] = shadeGroup;
+    }
 
+    private void renderScanlineBackground()
+    {
         immutable ushort dataAddr = bgTileDataAddress();
         immutable ushort mapAddr  = bgTileMapAddress();
 
@@ -325,6 +335,52 @@ class Gpu
             shadeIndex += ((tileMsb >> bitIndex) & 1) ? 1 : 0;
 
             writeShade(screenX, screenY, shadeIndex);
+        }
+    }
+
+    private void renderScanlineSprites()
+    {
+        int line = m_currentY;
+
+        int[] sprites = [];
+        for (int i = 0; i < 40; i++) {
+            int y = m_oam[i * 4];
+            if (line >= (y - 16) && line < y) {
+                sprites ~= i;
+            }
+        }
+
+        // TODO: Priority ordering
+
+        // TODO: Sprite render
+    }
+
+    private void renderScanline()
+    {
+        if (m_currentY >= SCREEN_HEIGHT) {
+            // out-of-bound
+            return;
+        }
+
+        if (isDisplayOn())
+        {
+            if (bgVisible())
+            {
+                renderScanlineBackground();
+            }
+            else
+            {
+                fillScanline(0x00); // transparent
+            }
+
+            if (spriteVisible())
+            {
+                renderScanlineSprites();
+            }
+        }
+        else
+        {
+            fillScanline(0xff); // black
         }
     }
 
