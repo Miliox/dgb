@@ -1,6 +1,7 @@
 import memory;
 import cpu;
 import gpu;
+import soundunit;
 import timer;
 
 immutable ubyte[256] bios = [
@@ -30,6 +31,7 @@ immutable ubyte[256] bios = [
 class Mmu : Memory {
     private Cpu m_cpu;
     private Gpu m_gpu;
+    private SoundUnit m_sound;
     private Timer m_timer;
     private Memory m_rom;
 
@@ -60,6 +62,16 @@ class Mmu : Memory {
     @property Gpu gpu()
     {
         return m_gpu;
+    }
+
+    @property SoundUnit sound(SoundUnit sound)
+    {
+        return m_sound = sound;
+    }
+
+    @property SoundUnit sound()
+    {
+        return m_sound;
     }
 
     @property Timer timer(Timer timer)
@@ -130,6 +142,10 @@ class Mmu : Memory {
         {
             return m_hram[address - 0xff80];
         }
+        else if (address >= 0xff30 && address < 0xff3f)
+        {
+            return m_sound.wave(address - 0xff30);
+        }
 
         switch (address)
         {
@@ -141,6 +157,48 @@ class Mmu : Memory {
                 return m_timer.tma();
             case 0xff08:
                 return m_timer.tac();
+            case 0xff10:
+                return m_sound.sr10();
+            case 0xff11:
+                return m_sound.sr11();
+            case 0xff12:
+                return m_sound.sr12();
+            case 0xff13:
+                return m_sound.sr13();
+            case 0xff14:
+                return m_sound.sr14();
+            case 0xff16:
+                return m_sound.sr21();
+            case 0xff17:
+                return m_sound.sr22();
+            case 0xff18:
+                return m_sound.sr23();
+            case 0xff19:
+                return m_sound.sr24();
+            case 0xff1a:
+                return m_sound.sr30();
+            case 0xff1b:
+                return m_sound.sr31();
+            case 0xff1c:
+                return m_sound.sr32();
+            case 0xff1d:
+                return m_sound.sr33();
+            case 0xff1e:
+                return m_sound.sr34();
+            case 0xff20:
+                return m_sound.sr41();
+            case 0xff21:
+                return m_sound.sr42();
+            case 0xff22:
+                return m_sound.sr43();
+            case 0xff23:
+                return m_sound.sr44();
+            case 0xff24:
+                return m_sound.sr50();
+            case 0xff25:
+                return m_sound.sr51();
+            case 0xff26:
+                return m_sound.sr52();
             case 0xff40:
                 return m_gpu.lcdc();
             case 0xff41:
@@ -210,6 +268,11 @@ class Mmu : Memory {
             m_hram[address - 0xff80] = value;
             return;
         }
+        else if (address >= 0xff30 && address < 0xff3f)
+        {
+            m_sound.wave(address - 0xff30, value);
+            return;
+        }
 
         switch (address)
         {
@@ -227,6 +290,69 @@ class Mmu : Memory {
                 break;
             case 0xff0f:
                 m_cpu.interruptEnable(value);
+                break;
+            case 0xff10:
+                m_sound.sr10(value);
+                break;
+            case 0xff11:
+                m_sound.sr11(value);
+                break;
+            case 0xff12:
+                m_sound.sr12(value);
+                break;
+            case 0xff13:
+                m_sound.sr13(value);
+                break;
+            case 0xff14:
+                m_sound.sr14(value);
+                break;
+            case 0xff16:
+                m_sound.sr21(value);
+                break;
+            case 0xff17:
+                m_sound.sr22(value);
+                break;
+            case 0xff18:
+                m_sound.sr23(value);
+                break;
+            case 0xff19:
+                m_sound.sr24(value);
+                break;
+            case 0xff1a:
+                m_sound.sr30(value);
+                break;
+            case 0xff1b:
+                m_sound.sr31(value);
+                break;
+            case 0xff1c:
+                m_sound.sr32(value);
+                break;
+            case 0xff1d:
+                m_sound.sr33(value);
+                break;
+            case 0xff1e:
+                m_sound.sr34(value);
+                break;
+            case 0xff20:
+                m_sound.sr41(value);
+                break;
+            case 0xff21:
+                m_sound.sr42(value);
+                break;
+            case 0xff22:
+                m_sound.sr43(value);
+                break;
+            case 0xff23:
+                m_sound.sr44(value);
+                break;
+            case 0xff24:
+                m_sound.sr50(value);
+                break;
+            case 0xff25:
+                m_sound.sr51(value);
+                break;
+            case 0xff26:
+                m_sound.sr52(value);
                 break;
             case 0xff40:
                 m_gpu.lcdc(value);

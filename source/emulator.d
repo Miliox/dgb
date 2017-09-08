@@ -8,6 +8,7 @@ import cpu;
 import gpu;
 import timer;
 import mmu;
+import soundunit;
 
 import debugger;
 import memory;
@@ -53,6 +54,7 @@ class Emulator : Thread
     private Mmu mmu;
     private Rom rom;
     private Timer timer;
+    private SoundUnit soundUnit;
 
     void delegate(ref ubyte[] frame) onFrame;
     void delegate() onStop;
@@ -75,12 +77,14 @@ class Emulator : Thread
         cpu = new Cpu();
         gpu = new Gpu();
         timer = new Timer();
+        soundUnit = new SoundUnit();
 
         mmu = new Mmu();
         mmu.cpu(cpu);
         mmu.gpu(gpu);
         mmu.rom(rom);
         mmu.timer(timer);
+        mmu.sound(soundUnit);
 
         cpu.memory(mmu);
         timer.onInterrupt = {
