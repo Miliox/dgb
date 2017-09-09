@@ -7,6 +7,7 @@ import core.thread;
 import cpu;
 import gpu;
 import timer;
+import joypad;
 import mmu;
 import soundunit;
 
@@ -54,6 +55,7 @@ class Emulator : Thread
     private Mmu mmu;
     private Rom rom;
     private Timer timer;
+    private Joypad joypad;
     private SoundUnit soundUnit;
 
     void delegate(ref ubyte[] frame) onFrame;
@@ -76,6 +78,7 @@ class Emulator : Thread
 
         cpu = new Cpu();
         gpu = new Gpu();
+        joypad = new Joypad();
         timer = new Timer();
         soundUnit = new SoundUnit();
 
@@ -83,6 +86,7 @@ class Emulator : Thread
         mmu.cpu(cpu);
         mmu.gpu(gpu);
         mmu.rom(rom);
+        mmu.joypad(joypad);
         mmu.timer(timer);
         mmu.sound(soundUnit);
 

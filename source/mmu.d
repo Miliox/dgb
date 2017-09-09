@@ -1,6 +1,7 @@
 import memory;
 import cpu;
 import gpu;
+import joypad;
 import soundunit;
 import timer;
 
@@ -29,11 +30,13 @@ immutable ubyte[256] bios = [
     0x3e, 0x01, 0xe0, 0x50];
 
 class Mmu : Memory {
-    private Cpu m_cpu;
-    private Gpu m_gpu;
+    private Cpu       m_cpu;
+    private Gpu       m_gpu;
+    private Joypad    m_joypad;
     private SoundUnit m_sound;
-    private Timer m_timer;
-    private Memory m_rom;
+    private Timer     m_timer;
+
+    private Memory    m_rom;
 
     private bool m_useBios = true;
 
@@ -62,6 +65,16 @@ class Mmu : Memory {
     @property Gpu gpu()
     {
         return m_gpu;
+    }
+
+    @property Joypad joypad()
+    {
+        return m_joypad;
+    }
+
+    @property Joypad joypad(Joypad joypad)
+    {
+        return m_joypad = joypad;
     }
 
     @property SoundUnit sound(SoundUnit sound)
@@ -149,6 +162,8 @@ class Mmu : Memory {
 
         switch (address)
         {
+            case 0xff00:
+                return m_joypad.p1();
             case 0xff04:
                 return m_timer.div();
             case 0xff05:
@@ -228,7 +243,7 @@ class Mmu : Memory {
             case 0xffff:
                 return m_cpu.interruptFlag();
             default:
-                return 0;
+                return 0xff;
         }
     }
 
@@ -276,6 +291,9 @@ class Mmu : Memory {
 
         switch (address)
         {
+            case 0xff00:
+                m_joypad.p1(value);
+                return;
             case 0xff04:
                 m_timer.div(value);
                 break;
