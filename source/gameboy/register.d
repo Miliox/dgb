@@ -66,6 +66,131 @@ static struct Registers
     }
 }
 
+union Lcdc
+{
+    enum SpriteSize : bool {
+        SIZE_8_8 = 0,
+        SIZE_8_16 = 1
+    }
+
+    enum BgTileMapAddressArea : bool {
+        BTMA_9800_9BFF = 0,
+        BTMA_9C00_9FFF = 1
+    }
+
+    enum BgTileDataAddressArea : bool {
+        BTDAA_8800_97FF = 0,
+        BTDAA_8000_8FFF = 1
+    }
+
+    enum WindowTileDataAddressArea : bool {
+        WTDAA_9800_9BFF = 0,
+        WTDAA_9C00_9FFF = 1
+    }
+
+    /*
+        FF40 - LCDC - LCD Control (R/W)
+
+        Bit 7 - LCD Display Enable             (0=Off, 1=On)
+        Bit 6 - Window Tile Map Display Select (0=9800-9BFF, 1=9C00-9FFF)
+        Bit 5 - Window Display Enable          (0=Off, 1=On)
+        Bit 4 - BG & Window Tile Data Select   (0=8800-97FF, 1=8000-8FFF)
+        Bit 3 - BG Tile Map Display Select     (0=9800-9BFF, 1=9C00-9FFF)
+        Bit 2 - OBJ (Sprite) Size              (0=8x8, 1=8x16)
+        Bit 1 - OBJ (Sprite) Display Enable    (0=Off, 1=On)
+        Bit 0 - BG Display (for CGB see below) (0=Off, 1=On)
+
+        FF40 -- LCDCONT [RW] LCD Control              | when set to 1 | when set to 0
+        Bit7  LCD operation                           | ON            | OFF
+        Bit6  Window Tile Table address               | 9C00-9FFF     | 9800-9BFF
+        Bit5  Window display                          | ON            | OFF
+        Bit4  Tile Pattern Table address              | 8000-8FFF     | 8800-97FF
+        Bit3  Background Tile Table address           | 9C00-9FFF     | 9800-9BFF
+        Bit2  Sprite size                             | 8x16          | 8x8
+        Bit1  Color #0 transparency in the window     | SOLID         | TRANSPARENT
+        Bit0 Background display | ON | OFF
+     */
+
+    ubyte value;
+    mixin(bitfields!(
+        bool,                      "bgOn",        1, // CG only
+        bool,                      "spriteOn",    1,
+        SpriteSize,                "spriteSize",  1,
+        BgTileMapAddressArea,      "bgTileMap",   1,
+        BgTileDataAddressArea,     "bgTileData",  1,
+        bool,                      "winOn",       1,
+        WindowTileDataAddressArea, "winTileData", 1,
+        bool,                      "lcdOn",       1));
+
+    ubyte get() {
+        return value;
+    }
+
+    void set(ubyte value) {
+        this.value = value;
+    }
+}
+
+union Stat
+{
+    /*
+        FF41 - STAT - LCDC Status (R/W)
+
+        Bit 6 - LYC=LY Coincidence Interrupt (1=Enable) (Read/Write)
+        Bit 5 - Mode 2 OAM Interrupt         (1=Enable) (Read/Write)
+        Bit 4 - Mode 1 V-Blank Interrupt     (1=Enable) (Read/Write)
+        Bit 3 - Mode 0 H-Blank Interrupt     (1=Enable) (Read/Write)
+        Bit 2 - Coincidence Flag  (0:LYC<>LY, 1:LYC=LY) (Read Only)
+        Bit 1-0 - Mode Flag       (Mode 0-3, see below) (Read Only)
+            0: During H-Blank
+            1: During V-Blank
+            2: During Searching OAM-RAM
+            3: During Transfering Data to LCD Driver
+
+
+        FF41 -- LCDSTAT [RW] LCD Status               | when set to 1 | when set to 0
+        Bit6    Interrupt on scanline coincidence     | ON            | OFF
+        Bit5    Interrupt on controller mode 10       | ON            | OFF
+        Bit4    Interrupt on controller mode 01       | ON            | OFF
+        Bit3    Interrupt on controller mode 00       | ON            | OFF
+        Bit2    Scanline coincidence flag             | COINCIDENCE   | NO COINCIDENCE
+        Bit1-0  LCD Controller mode:
+        00 - Horizontal blanking impulse [VRAM 8000-9FFF can be accessed by CPU]
+        01 - Vertical blanking impulse [VRAM 8000-9FFF can be accessed by CPU]
+        10 - OAM FE00-FE90 is accessed by LCD controller
+        11 - Both OAM FE00-FE90 and VRAM 8000-9FFF are accessed by LCD controller
+     */
+
+    enum Mode : ubyte {
+        HBLANK = 0,
+        VBLANK = 1,
+        OAM_READ = 2,
+        TRANSFER = 3
+    }
+
+    ubyte value;
+
+    mixin(bitfields!(
+        Mode, "mode",            2, // Read Only
+        bool, "yCoincidence",    1, // Read Only
+        bool, "intHBlank",       1,
+        bool, "intVBlank",       1,
+        bool, "intOAMRead",      1,
+        bool, "intYCoincidence", 1,
+        bool, "", 1));
+
+    enum ubyte writeMask = 0xfc;
+
+    ubyte get() {
+        return value;
+    }
+
+    void set(ubyte value) {
+        this.value &= ~writeMask;
+        this.value |= value & writeMask;
+    }
+}
+
 union Sr10
 {
     ubyte value;

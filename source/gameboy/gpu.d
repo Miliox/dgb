@@ -1,5 +1,7 @@
 module gameboy.gpu;
 
+import gameboy.register;
+
 import util.bitmask;
 alias bitmask = util.bitmask;
 
@@ -25,8 +27,9 @@ class Gpu
 {
     private int m_counter;
 
-    private ubyte m_lcdc;
-    private ubyte m_stat;
+    private Lcdc m_lcdc;
+    private Stat m_stat;
+
     private ubyte m_scrollY;
     private ubyte m_scrollX;
     private ubyte m_currentY;
@@ -46,152 +49,121 @@ class Gpu
     void delegate() onLcdcStatInterrupt;
     void delegate(ref ubyte[] frame) onFrameReady;
 
-    private enum Lcdc : ubyte
-    {
-        LCD_ENABLE      = 1 << 7,
-        WIN_TILE_SELECT = 1 << 6,
-        WIN_ENABLE      = 1 << 5,
-        BG_DATA_SELECT  = 1 << 4,
-        BG_TILE_SELECT  = 1 << 3,
-        OBJ_SIZE        = 1 << 2,
-        OBJ_ENABLE      = 1 << 1,
-        BG_DISPLAY      = 1 << 0
-    }
-
-    private enum Stat : ubyte
-    {
-        COINCIDENCE_INTERRUPT = 1 << 6,
-        OAM_INTERRUPT         = 1 << 5,
-        VBLANK_INTERRUPT      = 1 << 4,
-        HBLANK_INTERRUPT      = 1 << 3,
-        COINCIDENCE_FLAG      = 1 << 2, // read-only
-        MODE_FLAG             = 0x3     // read-only
-    }
-
-    private enum Mode : ubyte
-    {
-        HBLANK = 0,
-        VBLANK = 1,
-        OAM_READ = 2,
-        TRANSFER = 3
-    }
-
     this()
     {
-        m_stat = Mode.OAM_READ;
+        m_stat.mode = Stat.Mode.OAM_READ;
     }
 
-    @property ubyte lcdc()
+    ubyte lcdc()
     {
-        return m_lcdc;
+        return m_lcdc.get();
     }
 
-    @property ubyte lcdc(ubyte lcdc)
+    void lcdc(ubyte lcdc)
     {
-        return m_lcdc = lcdc;
+        return m_lcdc.set(lcdc);
     }
 
-    @property ubyte stat()
+    ubyte stat()
     {
-        return m_stat;
+        return m_stat.get();
     }
 
-    @property ubyte stat(ubyte stat)
+    void stat(ubyte stat)
     {
-        return m_stat = (stat & ~Stat.MODE_FLAG) | (m_stat & Stat.MODE_FLAG);
+        m_stat.set(stat);
     }
 
-    @property ubyte scy()
+    ubyte scy()
     {
         return m_scrollY;
     }
 
-    @property ubyte scy(ubyte scy)
+    void scy(ubyte scy)
     {
-        return m_scrollY = scy;
+        m_scrollY = scy;
     }
 
-    @property ubyte scx()
+    ubyte scx()
     {
         return m_scrollX;
     }
 
-    @property ubyte scx(ubyte scx)
+    void scx(ubyte scx)
     {
-        return m_scrollX = scx;
+        m_scrollX = scx;
     }
 
-    @property ubyte ly()
+    ubyte ly()
     {
         return m_currentY;
     }
 
-    @property ubyte ly(ubyte ly)
+    void ly(ubyte ly)
     {
         m_currentY = 0;
         checkYCoincidence();
-        setMode(Mode.OAM_READ);
-        return m_currentY;
+        setMode(Stat.Mode.OAM_READ);
     }
 
-    @property ubyte lyc()
+    ubyte lyc()
     {
         return m_compareY;
     }
 
-    @property ubyte lyc(ubyte lyc)
+    void lyc(ubyte lyc)
     {
-        return m_compareY = lyc;
+        m_compareY = lyc;
     }
 
-    @property ubyte wy()
+    ubyte wy()
     {
         return m_windowY;
     }
 
-    @property ubyte wy(ubyte wy)
+    void wy(ubyte wy)
     {
-        return m_windowY = wy;
+        m_windowY = wy;
     }
 
-    @property ubyte wx()
+    ubyte wx()
     {
         return m_windowX;
     }
 
-    @property ubyte wx(ubyte wx)
+    void wx(ubyte wx)
     {
-        return m_windowX = wx;
+        m_windowX = wx;
     }
 
-    @property ubyte bgp()
+    ubyte bgp()
     {
         return m_bgPalette;
     }
 
-    @property ubyte bgp(ubyte palette)
+    void bgp(ubyte palette)
     {
-        return m_bgPalette = palette;
+        m_bgPalette = palette;
     }
 
-    @property ubyte obp0()
+    ubyte obp0()
     {
         return m_objPaletteData0;
     }
 
-    @property ubyte obp0(ubyte palette)
+    void obp0(ubyte palette)
     {
-        return m_objPaletteData0 = palette;
+        m_objPaletteData0 = palette;
     }
 
-    @property ubyte obp1()
+    ubyte obp1()
     {
         return m_objPaletteData1;
     }
 
-    @property ubyte obp1(ubyte palette)
+    void obp1(ubyte palette)
     {
-        return m_objPaletteData1 = palette;
+        m_objPaletteData1 = palette;
     }
 
     @property ubyte oam(ushort position)
@@ -221,36 +193,36 @@ class Gpu
     }
 
     @property private ushort bgTileMapAddress() {
-        return (bitmask.check(m_lcdc, Lcdc.BG_TILE_SELECT) ? 0x9C00 : 0x9800) - 0x8000;
+        return (m_lcdc.bgTileMap == Lcdc.BgTileMapAddressArea.BTMA_9C00_9FFF ? 0x9C00 : 0x9800) - 0x8000;
     }
 
     @property private ushort bgTileDataAddress() {
-        return (bitmask.check(m_lcdc, Lcdc.BG_DATA_SELECT) ? 0x8000 : 0x9000) - 0x8000;
+        return ((m_lcdc.bgTileData == Lcdc.BgTileDataAddressArea.BTDAA_8000_8FFF) ? 0x8000 : 0x9000) - 0x8000;
     }
 
     @property private bool isTileNumberSigned() {
-        return !bitmask.check(m_lcdc, Lcdc.BG_DATA_SELECT);
+        return m_lcdc.bgTileData == Lcdc.BgTileDataAddressArea.BTDAA_8800_97FF;
     }
 
     @property private bool bgVisible() {
-        return bitmask.check(m_lcdc, Lcdc.BG_DISPLAY);
+        return true;     //m_lcdc.bgOn;
     }
 
     @property private bool spriteVisible() {
-        return bitmask.check(m_lcdc, Lcdc.OBJ_ENABLE);
+        return m_lcdc.spriteOn;
     }
 
     @property private bool isDisplayOn() {
-        return bitmask.check(m_lcdc, Lcdc.LCD_ENABLE);
+        return m_lcdc.lcdOn;
     }
 
-    private void setMode(Mode mode)
+    private void setMode(Stat.Mode mode)
     {
-        m_stat = (m_stat & ~Stat.MODE_FLAG) | (mode & Stat.MODE_FLAG);
+        m_stat.mode = mode;
 
-        if (((m_stat & Stat.MODE_FLAG) == Mode.VBLANK && (m_stat & Stat.VBLANK_INTERRUPT) != 0) ||
-            ((m_stat & Stat.MODE_FLAG) == Mode.HBLANK && (m_stat & Stat.HBLANK_INTERRUPT) != 0) ||
-            ((m_stat & Stat.MODE_FLAG) == Mode.OAM_READ && (m_stat & Stat.OAM_INTERRUPT) != 0))
+        if ((mode == Stat.Mode.VBLANK && m_stat.intVBlank) ||
+            (mode == Stat.Mode.HBLANK && m_stat.intHBlank) ||
+            (mode == Stat.Mode.OAM_READ && m_stat.intOAMRead))
         {
             onLcdcStatInterrupt();
         }
@@ -258,18 +230,10 @@ class Gpu
 
     private void checkYCoincidence()
     {
-        if (m_currentY == m_compareY)
+        m_stat.yCoincidence = m_currentY == m_compareY;
+        if (m_stat.yCoincidence && m_stat.intYCoincidence)
         {
-            m_stat |= Stat.COINCIDENCE_FLAG;
-
-            if ((m_stat & Stat.COINCIDENCE_INTERRUPT) != 0)
-            {
-                onLcdcStatInterrupt();
-            }
-        }
-        else
-        {
-            m_stat &= ~Stat.COINCIDENCE_FLAG;
+            onLcdcStatInterrupt();
         }
     }
 
@@ -373,7 +337,7 @@ class Gpu
             }
             else
             {
-                fillScanline(0x00); // transparent
+                fillScanline(0x00); // blank
             }
 
             if (spriteVisible())
@@ -383,7 +347,7 @@ class Gpu
         }
         else
         {
-            fillScanline(0xff); // black
+            fillScanline(0x00); // blank
         }
     }
 
@@ -391,9 +355,8 @@ class Gpu
     {
         m_counter += elapsed;
 
-        Mode m = cast(Mode) (m_stat & Stat.MODE_FLAG);
-        switch (m) {
-            case Mode.HBLANK:
+        switch (m_stat.mode) {
+            case Stat.Mode.HBLANK:
                 if (m_counter >= 204)
                 {
                     m_counter -= 204;
@@ -402,41 +365,41 @@ class Gpu
 
                     if (m_currentY >= 143)
                     {
-                        setMode(Mode.VBLANK);
+                        setMode(Stat.Mode.VBLANK);
                         onVBlankInterrupt();
                         renderScanline();
                         onFrameReady(m_frame);
                     }
                     else
                     {
-                        setMode(Mode.OAM_READ);
+                        setMode(Stat.Mode.OAM_READ);
                     }
                 }
                 break;
-            case Mode.VBLANK:
+            case Stat.Mode.VBLANK:
                 if (m_counter >= 456)
                 {
                     m_counter -= 456;
                     m_currentY += 1;
                     if (m_currentY > 153) {
                         m_currentY = 0;
-                        setMode(Mode.OAM_READ);
+                        setMode(Stat.Mode.OAM_READ);
                     }
                     checkYCoincidence();
                 }
                 break;
-            case Mode.OAM_READ:
+            case Stat.Mode.OAM_READ:
                 if (m_counter >= 80)
                 {
                     m_counter -= 80;
-                    setMode(Mode.TRANSFER);
+                    setMode(Stat.Mode.TRANSFER);
                 }
                 break;
-            case Mode.TRANSFER:
+            case Stat.Mode.TRANSFER:
                 if (m_counter >= 172)
                 {
                     m_counter -= 172;
-                    setMode(Mode.HBLANK);
+                    setMode(Stat.Mode.HBLANK);
                     renderScanline();
                 }
                 break;
