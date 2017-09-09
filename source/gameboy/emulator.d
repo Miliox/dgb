@@ -1,18 +1,20 @@
+module gameboy.emulator;
+
 import std.stdio;
 import std.file;
 
 import core.time;
 import core.thread;
 
-import cpu;
-import gpu;
-import timer;
-import joypad;
-import mmu;
-import soundunit;
+import gameboy.cpu;
+import gameboy.gpu;
+import gameboy.timer;
+import gameboy.joypad;
+import gameboy.mmu;
+import gameboy.soundunit;
+import gameboy.memory;
 
-import debugger;
-import memory;
+import util.debugger;
 
 class Rom : Memory
 {

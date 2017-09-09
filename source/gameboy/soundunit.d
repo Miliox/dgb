@@ -1,4 +1,6 @@
-import soundregister;
+module gameboy.soundunit;
+
+import gameboy.register;
 
 class SoundUnit
 {

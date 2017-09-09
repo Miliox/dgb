@@ -1,72 +1,13 @@
-import memory;
-import bitmask;
+module gameboy.cpu;
+
+import gameboy.memory;
+import gameboy.register;
+import util.bitmask;
+
+alias bitmask = util.bitmask;
 
 import std.stdio;
 import core.bitop;
-
-align(2):
-union AF {
-    align(1):
-    struct {
-        ubyte f;
-        ubyte a;
-    }
-    ushort v;
-};
-
-align(2):
-union BC {
-    align(1):
-    struct {
-        ubyte c;
-        ubyte b;
-    }
-    ushort v;
-};
-
-align(2):
-union DE {
-    align(1):
-    struct {
-        ubyte e;
-        ubyte d;
-    }
-    ushort v;
-};
-
-align(2):
-union HL {
-    align(1):
-    struct {
-        ubyte l;
-        ubyte h;
-    }
-    ushort v;
-};
-
-static struct Registers
-{
-    AF af;
-    BC bc;
-    DE de;
-    HL hl;
-    ushort sp;  // special
-    ushort pc;  // program counter
-
-    unittest {
-        Registers r;
-        r.af.v = 0xDEAD;
-        r.bc.v = 0xABCD;
-        r.hl.h = 0xFF;
-        r.hl.l = 0x00;
-
-        assert(r.af.a == 0xDE);
-        assert(r.af.f == 0xAD);
-        assert(r.bc.b == 0xAB);
-        assert(r.bc.c == 0xCD);
-        assert(r.hl.v == 0xFF00);
-    }
-}
 
 // Interrupt flag state indicated
 enum IFLAG : ubyte {

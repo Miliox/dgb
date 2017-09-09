@@ -1,3 +1,4 @@
+module gameboy.memory;
 
 struct MemoryMapInfo
 {

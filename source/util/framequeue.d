@@ -1,5 +1,4 @@
-import gpu;
-import std.stdio;
+module util.framequeue;
 
 // Pass frame buffer fram emulator to gui using triple buffering
 class FrameQueue {

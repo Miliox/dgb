@@ -1,5 +1,9 @@
-import cpu;
-import memory;
+module util.debugger;
+
+import gameboy.cpu;
+import gameboy.memory;
+import gameboy.register;
+
 import std.stdio;
 import std.string;
 

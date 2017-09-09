@@ -1,9 +1,11 @@
-import memory;
-import cpu;
-import gpu;
-import joypad;
-import soundunit;
-import timer;
+module gameboy.mmu;
+
+import gameboy.memory;
+import gameboy.cpu;
+import gameboy.gpu;
+import gameboy.joypad;
+import gameboy.soundunit;
+import gameboy.timer;
 
 immutable ubyte[256] bios = [
     0x31, 0xfe, 0xff, 0xaf, 0x21, 0xff, 0x9f, 0x32, 0xcb, 0x7c, 0x20, 0xfb,

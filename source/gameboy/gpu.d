@@ -1,4 +1,7 @@
-import bitmask;
+module gameboy.gpu;
+
+import util.bitmask;
+alias bitmask = util.bitmask;
 
 immutable int SCREEN_WIDTH = 160;
 immutable int SCREEN_HEIGHT = 144;

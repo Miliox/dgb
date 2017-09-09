@@ -1,5 +1,7 @@
-import memory;
-import cpu;
+module gameboy.timer;
+
+import gameboy.memory;
+import gameboy.cpu;
 
 class Timer {
     private static immutable short[4] TIMER_RATIO = [1024, 16, 64, 256];

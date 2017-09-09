@@ -1,6 +1,6 @@
 import core.thread;
 import derelict.sdl2.sdl;
-import framequeue;
+import util.framequeue;
 import std.stdio;
 
 class Gui

@@ -1,50 +1,7 @@
-import std.bitmanip;
+module gameboy.joypad;
+
+import gameboy.register;
 import std.stdio;
-
-union JoypadRegister
-{
-    ubyte value;
-
-    mixin(bitfields!(
-        bool, "p10", 1, // R   Input Right or Button A (0=Pressed)
-        bool, "p11", 1, // R   Input Left or Button B  (0=Pressed)
-        bool, "p12", 1, // R   Input Up or Select      (0=Pressed)
-        bool, "p13", 1, // R   Input Down or Start     (0=Pressed)
-        bool, "p14", 1, // RW  Select Direction Keys   (0=Select)
-        bool, "p15", 1, // RW  Select Button Keys      (0=Select)
-        byte, "nu",  2));  //  Not Used
-
-    mixin(bitfields!(
-        bool, "a",      1,
-        bool, "b",      1,
-        bool, "select", 1,
-        bool, "start",  1,
-        bool, "",       1,
-        bool, "button", 1,
-        byte, "",       2));
-
-    mixin(bitfields!(
-        bool, "right",  1,
-        bool, "left",   1,
-        bool, "up",     1,
-        bool, "down",   1,
-        bool, "dpad",   1,
-        bool, "", 1,
-        byte, "",       2));
-
-    enum ubyte writeMask = 0xf0;
-
-    void set(ubyte value)
-    {
-        this.value &= ~writeMask;
-        this.value |= value & writeMask;
-    }
-
-    ubyte get()
-    {
-        return this.value;
-    }
-}
 
 class Joypad
 {

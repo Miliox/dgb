@@ -1,4 +1,4 @@
-module bitmask;
+module util.bitmask;
 
 pure void set(ref ubyte value, ubyte mask)
 {

@@ -1,5 +1,5 @@
 import gui;
-import emulator;
+import gameboy.emulator;
 import std.stdio;
 
 void main(string[] args)
