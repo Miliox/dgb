@@ -8,11 +8,12 @@ import core.thread;
 
 import gameboy.cpu;
 import gameboy.gpu;
-import gameboy.timer;
-import gameboy.joypad;
 import gameboy.mmu;
-import gameboy.sound;
+import gameboy.joypad;
 import gameboy.memory;
+import gameboy.serial;
+import gameboy.sound;
+import gameboy.timer;
 
 import util.debugger;
 
@@ -56,9 +57,11 @@ class Emulator : Thread
     private Gpu gpu;
     private Mmu mmu;
     private Rom rom;
-    private Timer timer;
+
     private Joypad joypad;
-    private Sound sound;
+    private Serial serial;
+    private Sound  sound;
+    private Timer  timer;
 
     void delegate(ref ubyte[] frame) onFrame;
     void delegate() onStop;
@@ -80,17 +83,20 @@ class Emulator : Thread
 
         cpu = new Cpu();
         gpu = new Gpu();
+
         joypad = new Joypad();
-        timer = new Timer();
-        sound = new Sound();
+        sound  = new Sound();
+        serial = new Serial();
+        timer  = new Timer();
 
         mmu = new Mmu();
         mmu.cpu(cpu);
         mmu.gpu(gpu);
         mmu.rom(rom);
         mmu.joypad(joypad);
-        mmu.timer(timer);
+        mmu.serial(serial);
         mmu.sound(sound);
+        mmu.timer(timer);
 
         cpu.memory(mmu);
         timer.onInterrupt = {
@@ -134,14 +140,12 @@ class Emulator : Thread
             {
                 // Stop execution for now
                 writeln("nintendo check: passed");
-                running = false;
-                break;
+                //running = false;
+                //break;
             }
 
             ubyte cycles = cpu.step();
-            gpu.addTicks(cycles);
             mmu.addTicks(cycles);
-            timer.addTicks(cycles);
 
             tickCount += cycles;
             if (tickCount >= TICKS_PER_FRAME) {

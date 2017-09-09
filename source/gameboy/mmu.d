@@ -4,6 +4,7 @@ import gameboy.memory;
 import gameboy.cpu;
 import gameboy.gpu;
 import gameboy.joypad;
+import gameboy.serial;
 import gameboy.sound;
 import gameboy.timer;
 
@@ -35,6 +36,7 @@ class Mmu : Memory {
     private Cpu       m_cpu;
     private Gpu       m_gpu;
     private Joypad    m_joypad;
+    private Serial    m_serial;
     private Sound     m_sound;
     private Timer     m_timer;
 
@@ -79,6 +81,16 @@ class Mmu : Memory {
         return m_joypad = joypad;
     }
 
+    @property Serial serial()
+    {
+        return m_serial;
+    }
+
+    @property Serial serial(Serial serial)
+    {
+        return m_serial = serial;
+    }
+
     @property Sound sound(Sound sound)
     {
         return m_sound = sound;
@@ -110,6 +122,10 @@ class Mmu : Memory {
     }
 
     void addTicks(ubyte elapsed) {
+        gpu.addTicks(elapsed);
+        serial.addTicks(elapsed);
+        timer.addTicks(elapsed);
+
         while (m_dmaOn && elapsed > 0)
         {
             if (m_dmaIndex < 0xa0)
@@ -124,7 +140,6 @@ class Mmu : Memory {
             }
             elapsed -= 4; // elapsed cpu cycles always multiple of 4, so no checks for underflown
         }
-
     }
 
     ubyte read8(ushort address)
@@ -166,6 +181,10 @@ class Mmu : Memory {
         {
             case 0xff00:
                 return m_joypad.p1();
+            case 0xff01:
+                return m_serial.sb();
+            case 0xff02:
+                return m_serial.sc();
             case 0xff04:
                 return m_timer.div();
             case 0xff05:
@@ -296,6 +315,12 @@ class Mmu : Memory {
             case 0xff00:
                 m_joypad.p1(value);
                 return;
+                case 0xff01:
+                    m_serial.sb(value);
+                    return;
+                case 0xff02:
+                    m_serial.sc(value);
+                    return;
             case 0xff04:
                 m_timer.div(value);
                 break;
