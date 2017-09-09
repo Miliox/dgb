@@ -1,8 +1,8 @@
-module gameboy.soundunit;
+module gameboy.sound;
 
 import gameboy.register;
 
-class SoundUnit
+class Sound
 {
     private Sr10 m_sr10; // Channel 1 Sweep register (R/W)
     private Sr11 m_sr11; // Channel 1 Sound length/Wave pattern duty (R/W)

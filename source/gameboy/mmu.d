@@ -4,7 +4,7 @@ import gameboy.memory;
 import gameboy.cpu;
 import gameboy.gpu;
 import gameboy.joypad;
-import gameboy.soundunit;
+import gameboy.sound;
 import gameboy.timer;
 
 immutable ubyte[256] bios = [
@@ -35,7 +35,7 @@ class Mmu : Memory {
     private Cpu       m_cpu;
     private Gpu       m_gpu;
     private Joypad    m_joypad;
-    private SoundUnit m_sound;
+    private Sound     m_sound;
     private Timer     m_timer;
 
     private Memory    m_rom;
@@ -79,12 +79,12 @@ class Mmu : Memory {
         return m_joypad = joypad;
     }
 
-    @property SoundUnit sound(SoundUnit sound)
+    @property Sound sound(Sound sound)
     {
         return m_sound = sound;
     }
 
-    @property SoundUnit sound()
+    @property Sound sound()
     {
         return m_sound;
     }

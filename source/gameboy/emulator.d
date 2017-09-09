@@ -11,7 +11,7 @@ import gameboy.gpu;
 import gameboy.timer;
 import gameboy.joypad;
 import gameboy.mmu;
-import gameboy.soundunit;
+import gameboy.sound;
 import gameboy.memory;
 
 import util.debugger;
@@ -58,7 +58,7 @@ class Emulator : Thread
     private Rom rom;
     private Timer timer;
     private Joypad joypad;
-    private SoundUnit soundUnit;
+    private Sound sound;
 
     void delegate(ref ubyte[] frame) onFrame;
     void delegate() onStop;
@@ -82,7 +82,7 @@ class Emulator : Thread
         gpu = new Gpu();
         joypad = new Joypad();
         timer = new Timer();
-        soundUnit = new SoundUnit();
+        sound = new Sound();
 
         mmu = new Mmu();
         mmu.cpu(cpu);
@@ -90,7 +90,7 @@ class Emulator : Thread
         mmu.rom(rom);
         mmu.joypad(joypad);
         mmu.timer(timer);
-        mmu.sound(soundUnit);
+        mmu.sound(sound);
 
         cpu.memory(mmu);
         timer.onInterrupt = {
