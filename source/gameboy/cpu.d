@@ -1848,7 +1848,9 @@ class Cpu
 
         // LD A,(a16)
         isaTable[0xfa] = delegate() {
-            m_regs.af.a = read8(m_regs.pc++);
+            ushort addr = read16(m_regs.pc);
+            m_regs.pc += 2;
+            m_regs.af.a = read8(addr);
             return ubyte(16);
         };
 
