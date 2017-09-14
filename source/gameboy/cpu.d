@@ -296,8 +296,10 @@ class Cpu
 
         // LD (a16),SP
         isaTable[0x08] = delegate() {
-            write16(read16(m_regs.pc), m_regs.sp);
+            ushort addr = read16(m_regs.pc);
             m_regs.pc += 2;
+
+            write16(addr, m_regs.sp);
             return ubyte(20);
         };
 
@@ -1469,7 +1471,9 @@ class Cpu
 
         // JP a16
         isaTable[0xc3] = delegate() {
-            jp(read16(m_regs.pc));
+            ushort addr = read16(m_regs.pc);
+            m_regs.pc += 2;
+            jp(addr);
             return ubyte(16);
         };
 
@@ -1553,6 +1557,7 @@ class Cpu
         isaTable[0xcd] = delegate() {
             ushort addr = read16(m_regs.pc);
             m_regs.pc += 2;
+
             call(addr);
             return ubyte(24);
         };
@@ -1756,6 +1761,7 @@ class Cpu
         isaTable[0xea] = delegate() {
             ushort addr = read16(m_regs.pc);
             m_regs.pc += 2;
+
             write8(addr, m_regs.af.a);
             return ubyte(16);
         };
