@@ -50,6 +50,13 @@ class Mmu : Memory {
 
     private ubyte[] m_lram = new ubyte[0x2000];
     private ubyte[] m_hram = new ubyte[0x7f];
+    private ubyte[] m_hwio = new ubyte[0x80];
+
+    this() {
+        m_lram[0 .. m_lram.length] = ubyte(0xff);
+        m_hram[0 .. m_hram.length] = ubyte(0xff);
+        m_hwio[0 .. m_hwio.length] = ubyte(0xff);
+    }
 
     @property Cpu cpu(Cpu cpu)
     {
@@ -264,6 +271,9 @@ class Mmu : Memory {
             case 0xffff:
                 return m_cpu.interruptFlag();
             default:
+                if (address >= 0xff00 && address <= 0xff7f) {
+                    return m_hwio[address - 0xff00];
+                }
                 return 0xff;
         }
     }
@@ -449,6 +459,9 @@ class Mmu : Memory {
                 m_cpu.interruptFlag(value);
                 break;
             default:
+                if (address >= 0xff00 && address <= 0xff7f) {
+                    m_hwio[address - 0xff00] = value;
+                }
                 break;
         }
     }
