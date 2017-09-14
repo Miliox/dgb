@@ -150,7 +150,7 @@ class Cpu
         }
 
         if (m_eireq) {
-            m_ime = false;
+            m_ime = true;
             m_eireq = false;
         }
     }
