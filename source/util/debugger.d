@@ -120,47 +120,34 @@ immutable string[256] cbext_asm = [
     "set 7,b", "set 7,c", "set 7,d", "set 7,e", "set 7,h", "set 7,l", "set 7,(hl)", "set 7,a"
 ];
 
-class Debugger
+void dumpI(ref Cpu cpu)
 {
-    private Cpu m_cpu;
+    ushort pc = cpu.registers.pc;
+    ubyte opcode = cpu.memory.read8(pc);
 
-    @property Cpu cpu() {
-        return m_cpu;
-    }
-
-    @property Cpu cpu(Cpu cpu) {
-        m_cpu = cpu;
-        return m_cpu;
-    }
-
-    // TODO: return as string
-    void dumpI() {
-        ushort pc = m_cpu.registers.pc;
-        ubyte opcode = m_cpu.memory.read8(pc);
-
-        int argsz =  opcode_len[opcode] - 1;
-        ubyte argv  = 0;
-        for (ubyte i = 0; i < argsz; i++)
-        {
-            ushort addr = cast(ushort) ((m_cpu.registers.pc + 1 + i) << (8 * i));
-            argv += m_cpu.memory.read8(addr);
-        }
-
-        writef("%04x: ", pc);
-        if (opcode != 0xcb)
-        {
-            writef(opcode_fmt[opcode], argv);
-        }
-        else
-        {
-            writef("%s", cbext_asm[argv]);
-        }
-    }
-
-    // TODO: return as string
-    void dumpR()
+    int argsz = opcode_len[opcode];
+    int argv  = 0;
+    for (ubyte i = 1; i < argsz; i++)
     {
-        Registers r = cpu.registers();
-        writef("af=%04x bc=%04x de=%04x hl=%04x sp=%04x pc=%04x", r.af.v, r.bc.v, r.de.v, r.hl.v, r.sp, r.pc);
+        ushort addr = cast(ushort) (cpu.registers.pc + i);
+        argv += cpu.memory.read8(addr) << ((i - 1) * 8);
     }
+
+    writef("%04x: ", pc);
+    if (opcode != 0xcb)
+    {
+        writef(opcode_fmt[opcode], argv);
+    }
+    else
+    {
+        writef("%s", cbext_asm[argv & 0xff]);
+    }
+}
+
+void dumpR(ref Cpu cpu)
+{
+    Registers r = cpu.registers();
+    ubyte ie = cpu.interruptEnable();
+    ubyte iflag = cpu.interruptFlag();
+    writef("af=%04x bc=%04x de=%04x hl=%04x sp=%04x pc=%04x ie=%02x if=%02x", r.af.v, r.bc.v, r.de.v, r.hl.v, r.sp, r.pc, ie, iflag);
 }
