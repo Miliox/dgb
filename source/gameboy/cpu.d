@@ -1713,7 +1713,7 @@ class Cpu
 
         // LD (C),A
         isaTable[0xe2] = delegate() {
-            write8(IOADDR + m_regs.bc.c, m_regs.af.f);
+            write8(IOADDR + m_regs.bc.c, m_regs.af.a);
             return ubyte(8);
         };
 
