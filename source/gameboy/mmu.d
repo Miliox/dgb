@@ -267,9 +267,9 @@ class Mmu : Memory {
             case 0xff4b:
                 return m_gpu.wx();
             case 0xff0f:
-                return m_cpu.interruptEnable();
-            case 0xffff:
                 return m_cpu.interruptFlag();
+            case 0xffff:
+                return m_cpu.interruptEnable();
             default:
                 if (address >= 0xff00 && address <= 0xff7f) {
                     return m_hwio[address - 0xff00];
@@ -344,7 +344,7 @@ class Mmu : Memory {
                 m_timer.tac(value);
                 break;
             case 0xff0f:
-                m_cpu.interruptEnable(value);
+                m_cpu.interruptFlag(value);
                 break;
             case 0xff10:
                 m_sound.sr10(value);
@@ -456,7 +456,7 @@ class Mmu : Memory {
                 }
                 break;
             case 0xffff:
-                m_cpu.interruptFlag(value);
+                m_cpu.interruptEnable(value);
                 break;
             default:
                 if (address >= 0xff00 && address <= 0xff7f) {
