@@ -147,7 +147,22 @@ void dumpI(ref Cpu cpu)
 void dumpR(ref Cpu cpu)
 {
     Registers r = cpu.registers();
+    ubyte ime = cast(ubyte) cpu.ime();
     ubyte ie = cpu.interruptEnable();
     ubyte iflag = cpu.interruptFlag();
-    writef("af=%04x bc=%04x de=%04x hl=%04x sp=%04x pc=%04x ie=%02x if=%02x", r.af.v, r.bc.v, r.de.v, r.hl.v, r.sp, r.pc, ie, iflag);
+    writef("af=%04x bc=%04x de=%04x hl=%04x sp=%04x pc=%04x ime=%x ie=%02x if=%02x", r.af.v, r.bc.v, r.de.v, r.hl.v, r.sp, r.pc, ime, ie, iflag);
+}
+
+void dumpM(ref Cpu cpu, ushort beginAddr, ushort endAddr) {
+    beginAddr -= beginAddr % 8; // align by 8
+    for (ushort i = beginAddr; i < endAddr; i++) {
+        if (i % 8 == 0) {
+            writef("%04x:", i);
+        }
+        writef(" %02x", cpu.memory().read8(i));
+        if (i % 8 == 7) {
+            writeln();
+        }
+    }
+    writeln();
 }
