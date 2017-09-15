@@ -44,6 +44,7 @@ class Gpu
     private ubyte[] m_ram = new byte[0x2000];
 
     private ubyte[] m_frame = new byte[SCREEN_HEIGHT * SCREEN_BYTES_PER_LINE];
+    private ubyte[] m_blank = new byte[SCREEN_HEIGHT * SCREEN_BYTES_PER_LINE];
 
     void delegate() onVBlankInterrupt;
     void delegate() onLcdcStatInterrupt;
@@ -52,6 +53,8 @@ class Gpu
     this()
     {
         m_stat.mode = Stat.Mode.OAM_READ;
+        m_frame[0 .. m_frame.length] = 0;
+        m_blank[0 .. m_blank.length] = 0;
     }
 
     ubyte lcdc()
@@ -61,7 +64,29 @@ class Gpu
 
     void lcdc(ubyte lcdc)
     {
-        return m_lcdc.set(lcdc);
+        bool on = m_lcdc.lcdOn;
+        m_lcdc.set(lcdc);
+
+        if (on && !m_lcdc.lcdOn)
+        {
+            if (m_stat.mode == Stat.Mode.VBLANK)
+            {
+                onFrameReady(m_blank);
+            }
+            else
+            {
+                stderr.writeln("turn off only allowed at VBLANK current is ", m_stat.mode);
+                m_lcdc.lcdOn = true;
+            }
+
+        }
+
+        if (!on && m_lcdc.lcdOn)
+        {
+            m_counter = 0;
+            m_currentY = 0;
+            m_stat.mode = Stat.Mode.OAM_READ;
+        }
     }
 
     ubyte stat()
@@ -353,6 +378,12 @@ class Gpu
 
     void addTicks(ubyte elapsed)
     {
+        if (!m_lcdc.lcdOn)
+        {
+            m_counter = 0;
+            return;
+        }
+
         m_counter += elapsed;
 
         switch (m_stat.mode) {
